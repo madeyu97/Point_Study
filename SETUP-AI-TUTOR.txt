@@ -1,0 +1,53 @@
+════════════════════════════════════════════════════════════
+  AI TUTOR SETUP  —  Netlify + GitHub + Gemini
+════════════════════════════════════════════════════════════
+
+WHY THIS SETUP
+  The AI Tutor needs your Gemini key to stay SECRET. It must never live in
+  index.html (that file is downloaded to every visitor's browser — a key there
+  is public within hours and will be drained). The key instead lives on
+  Netlify's server as an environment variable, and a small serverless function
+  (netlify/functions/tutor.js) calls Gemini on the app's behalf. The browser
+  only ever talks to your own function, never to Google directly.
+
+FOLDER (already prepared for you)
+  jingxue/
+    index.html, sw.js, manifest.webmanifest, icons…   ← the app
+    netlify.toml                                        ← tells Netlify where the function is
+    netlify/functions/tutor.js                          ← the server-side Gemini proxy (holds NO key)
+
+────────────────────────────────────────────────────────────
+ONE-TIME SETUP
+────────────────────────────────────────────────────────────
+
+0. REVOKE the key you pasted into chat (it is compromised) and create a NEW
+   Gemini key:  https://aistudio.google.com/apikey
+
+1. PUT THIS FOLDER ON GITHUB
+   - Create a new repo (private is fine) at github.com.
+   - Upload the whole jingxue folder contents to it (keep the netlify/ folder).
+     (Easiest: github.com → New repo → "uploading an existing file" → drag the files.)
+
+2. CONNECT NETLIFY TO THE REPO
+   - app.netlify.com → Add new site → Import an existing project → GitHub → pick the repo.
+   - Build command: leave EMPTY.   Publish directory: .   (a single dot)
+   - Deploy.
+
+3. ADD THE KEY AS AN ENVIRONMENT VARIABLE (this is the secret bit)
+   - Netlify site → Site configuration → Environment variables → Add a variable
+   - Key:   GEMINI_API_KEY
+   - Value: your NEW Gemini key
+   - Save, then Deploys → Trigger deploy → Deploy site (so the function picks it up).
+
+4. DONE. Open the site, go to AI Tutor → New case.
+   - If it says "Tutor unavailable", the env var isn't set / not redeployed yet.
+   - Everything else in the app still works offline exactly as before.
+
+UPDATING FROM NOW ON
+   Push to the GitHub repo → Netlify redeploys automatically. (No more drag-and-drop.)
+
+COST / ABUSE NOTE
+   The function endpoint is public, so someone who finds your URL could use your
+   Gemini quota (they still CANNOT see your key). Gemini's free-tier quota caps
+   the damage. If you want, keep the URL private, or I can add a simple password
+   gate. Watch usage in Google AI Studio.
