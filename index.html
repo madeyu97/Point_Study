@@ -354,6 +354,11 @@ table.matrix td.rev .py{display:block;font-family:var(--disp);font-style:italic;
 .choice.sel{border-color:var(--gold2);background:rgba(216,175,82,.12);color:var(--paper)}
 .choice.missed{border-color:var(--jade);background:rgba(143,181,151,.10)}
 .hint{text-align:center;color:var(--paper-faint);font-size:12.5px;font-family:var(--disp);letter-spacing:1px;margin-bottom:9px}
+.echip{font-family:var(--disp);font-size:10.5px;letter-spacing:1px;text-transform:uppercase;font-weight:600;padding:2px 8px;border-radius:10px;border:1px solid var(--gold2);color:var(--gold)}
+.editpanel{margin-top:12px;padding-top:12px;border-top:1px dashed var(--line2)}
+.erow{margin-bottom:10px}
+.erow label{display:block;font-family:var(--disp);font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--paper-faint);margin-bottom:4px}
+.ein{width:100%;font-size:14px;line-height:1.45;resize:vertical}
 .tloading{text-align:center;padding:56px 0;color:var(--paper-faint)}
 .tloading .han{font-family:var(--han);font-size:52px;color:var(--seal);animation:tutpulse 1.4s ease-in-out infinite}
 .tloading p{margin-top:14px;font-family:var(--disp);letter-spacing:1.5px;font-size:14px}
@@ -450,7 +455,33 @@ const store=(()=>{let mem={},ok=false;try{localStorage.setItem('__t','1');localS
         set:(k,v)=>{try{ok?localStorage.setItem(k,v):(mem[k]=v)}catch(e){mem[k]=v}}}})();
 const KEY='jingxue.v2';
 let ST=load();
-function fresh(){return{srs:{},xp:0,streak:0,freeze:1,lastDay:null,reviews:0,dailyGoal:30,newCap:12,learnOrder:'priority',pins:{},todayDate:null,todayCount:0,ach:{},celebGoal:null,soundOn:true,seenIntro:false}}
+
+/* ============ USER POINT EDITS (personalisation) ============ */
+/* Edits are sparse per-point overrides stored in ST.edits[pid]. The pristine
+   data always survives in _orig (re-captured from the embedded JSON on every
+   load), so "restore default" can never lose anything. applyEdits() is
+   idempotent: fields with no override reset to _orig. */
+const EDIT_FIELDS=['hanzi','pinyin','english','location','functions'];
+DB.points.forEach(p=>{p._orig={hanzi:p.hanzi,pinyin:p.pinyin,english:p.english,location:p.location,functions:p.functions.slice()}});
+function applyEdits(){ST.edits=ST.edits||{};
+  DB.points.forEach(p=>{const e=ST.edits[p.id];
+    EDIT_FIELDS.forEach(f=>{const v=(e&&e[f]!==undefined)?e[f]:p._orig[f];p[f]=(f==='functions')?v.slice():v});
+    p.note=(e&&e.note)?e.note:''})}
+function isEdited(pid){return !!(ST.edits&&ST.edits[pid])}
+function editedCount(){return Object.keys(ST.edits||{}).length}
+function savePointEdit(pid,fields){ST.edits=ST.edits||{};
+  const p=ptById[pid];if(!p)return false;
+  const e={};
+  EDIT_FIELDS.forEach(f=>{if(fields[f]===undefined)return;
+    const v=fields[f];
+    const same=(f==='functions')?JSON.stringify(v)===JSON.stringify(p._orig[f]):v===p._orig[f];
+    if(!same)e[f]=v});
+  if(fields.note&&fields.note.trim())e.note=fields.note.trim();
+  if(Object.keys(e).length)ST.edits[pid]=e;else delete ST.edits[pid];
+  applyEdits();save();return true}
+function restorePoint(pid){if(ST.edits)delete ST.edits[pid];applyEdits();save()}
+applyEdits();
+function fresh(){return{srs:{},xp:0,streak:0,freeze:1,lastDay:null,reviews:0,dailyGoal:30,newCap:12,learnOrder:'priority',pins:{},edits:{},todayDate:null,todayCount:0,ach:{},celebGoal:null,soundOn:true,seenIntro:false}}
 function load(){try{const s=JSON.parse(store.get(KEY));return s&&s.srs?Object.assign(fresh(),s):fresh()}catch(e){return fresh()}}
 function save(){store.set(KEY,JSON.stringify(ST))}
 const DAY=86400000,MIN=60000,now=()=>Date.now();
@@ -719,7 +750,8 @@ function chHan(ch){return CHHAN[ch]||ch}
 function nameBlock(p){return `${p.hanzi?`<div class="hanzi" style="font-size:clamp(44px,11vw,72px)">${esc(p.hanzi)}</div>`:''}<div class="py">${esc(p.pinyin)}</div>${p.english?`<div class="en">${esc(p.english)}</div>`:''}<div class="code">${p.code}-${p.num}</div>`}
 function fnsBlock(p){return `<div class="fns">${p.functions.map(f=>`<div>${esc(f)}</div>`).join('')}</div>`}
 function extraBlock(p){let e='';if(p.categories.length)e+=`<div class="extra"><div class="l">command-point roles</div><div class="cats">${p.categories.map(c=>`<span>${esc(c)}</span>`).join('')}</div></div>`;
-  if(p.cautions.length){const n=p.cautions.flatMap(c=>c.notes);e+=`<div class="extra" style="border-top:none;padding-top:4px"><div class="caut">⚠ ${esc([...new Set(n)].join(' · '))}</div></div>`}return e}
+  if(p.cautions.length){const n=p.cautions.flatMap(c=>c.notes);e+=`<div class="extra" style="border-top:none;padding-top:4px"><div class="caut">⚠ ${esc([...new Set(n)].join(' · '))}</div></div>`}
+  if(p.note)e+=`<div class="extra" style="border-top:none;padding-top:4px"><div class="l">your note</div><div class="ex" style="color:var(--gold)">${esc(p.note)}</div></div>`;return e}
 const DIRS={
   loc:{tag:'Location → Point',ask:'Which point is described — and what is it?',need:p=>p.location,
     front:p=>`<div class="loc">${esc(p.location)}</div>`,back:p=>nameBlock(p)+extraBlock(p)},
@@ -894,7 +926,7 @@ function renderChannelMap(mount){let active=ST._lastChan&&ST._lastChan!=='Extra'
 }
 
 /* ============ CLINICAL CASES (five reasoning demands, data-grounded) ============ */
-function pointByPinyin(py){return DB.points.find(p=>norm(p.pinyin)===norm(py))}
+function pointByPinyin(py){const n=norm(py);return DB.points.find(p=>norm(p.pinyin)===n||(p._orig&&norm(p._orig.pinyin)===n))}
 function reviewDetail(ids){return [...new Set(ids)].map(id=>{const p=ptById[id];if(!p)return '';
   return `<div class="rdetail">${nameBlock(p)}${p.location?`<div class="loc">${esc(p.location)}</div>`:''}${p.functions.length?fnsBlock(p):''}${extraBlock(p)}</div>`}).join('')}
 const ALLCATS=[...new Set(DB.points.flatMap(p=>p.categories))];
@@ -1242,7 +1274,7 @@ function restoreState(text){
   if(!state||typeof state!=='object'||!('srs' in state)){alert('This file is missing progress data — it is not a Dojo backup.');return false}
   const n=Object.keys(state.srs||{}).length;
   if(!confirm('Replace ALL progress on this device with this backup ('+n+' studied items, streak '+(state.streak||0)+')? This cannot be undone.'))return false;
-  ST=Object.assign(fresh(),state);save();syncHeader();go('home');toast('復','Backup restored','Your progress has been loaded.');return true}
+  ST=Object.assign(fresh(),state);applyEdits();save();syncHeader();go('home');toast('復','Backup restored','Your progress has been loaded.');return true}
 
 /* ============ SETTINGS ============ */
 function openSettings(){const m=$('#viewMount');m.innerHTML='';go('view');ac();
@@ -1265,6 +1297,10 @@ function openSettings(){const m=$('#viewMount');m.innerHTML='';go('view');ac();
       </div>
       <div class="setup"><div class="row"><label>Streak protection</label>
         <div style="color:var(--paper2);font-size:14px">🔥 ${ST.streak}-day streak · ❄ ${ST.freeze} freeze${ST.freeze===1?'':'s'} banked. A freeze auto-covers one missed day so the streak survives — you earn one per 7-day run, up to three.</div></div></div>
+      <div class="setup"><div class="row"><label>Customised points</label>
+        <div style="color:var(--paper2);font-size:13.5px;margin-bottom:${editedCount()?'11px':'0'}"><b>${editedCount()}</b> point${editedCount()===1?'':'s'} carrying your own edits or notes${editedCount()?'':' — edit any point via ✎ in the Atlas'}. Edits travel with backups.</div>
+        ${editedCount()?'<div class="actions" style="justify-content:flex-start"><button class="btn ghost" id="restoreAllEdits">Restore ALL points to defaults</button></div>':''}
+      </div></div>
       <div class="setup"><div class="row"><label>Backup &amp; restore</label>
         <div style="color:var(--paper2);font-size:13.5px;margin-bottom:11px">Your progress lives only on this device — a backup is the only thing that survives a cleared browser or a new phone. <b>${Object.keys(ST.srs||{}).length}</b> items studied · streak ${ST.streak}.</div>
         <div class="chips">
@@ -1285,6 +1321,7 @@ function openSettings(){const m=$('#viewMount');m.innerHTML='';go('view');ac();
     m.querySelectorAll('[data-ord]').forEach(x=>x.onclick=()=>{ST.learnOrder=x.dataset.ord;save();draw()});
     m.querySelectorAll('[data-snd]').forEach(x=>x.onclick=()=>{ST.soundOn=x.dataset.snd==='1';save();syncHeader();if(ST.soundOn){ac();sfx('good')}draw()});
     $('#bkExport').onclick=downloadBackup;
+    const rae=$('#restoreAllEdits');if(rae)rae.onclick=()=>{if(confirm('Restore ALL '+editedCount()+' customised points to the built-in data? Every edit and note will be removed. This cannot be undone (export a backup first if unsure).')){ST.edits={};applyEdits();save();toast('復','All defaults restored','');draw()}};
     $('#bkCopy').onclick=copyBackup;
     $('#bkImportFile').onclick=()=>$('#bkFile').click();
     $('#bkFile').onchange=e=>{const f=e.target.files&&e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>restoreState(String(r.result));r.onerror=()=>alert('Could not read that file.');r.readAsText(f)};
@@ -1475,11 +1512,36 @@ function renderAtlas(mount){let active='ALL',q='',sortImp=true;
     $('#acount').textContent=list.length+' point'+(list.length===1?'':'s');const box=$('#alist');box.innerHTML='';
     list.slice(0,300).forEach(p=>{const d=el('div','pt');const t=tierOf(p.id);const pinned=!!(ST.pins&&ST.pins[p.id]);
       d.innerHTML=`<div class="top"><span class="han">${esc(p.hanzi)}</span><span class="py">${esc(p.pinyin)}</span>${p.english?`<span class="en">${esc(p.english)}</span>`:''}
-        <span style="margin-left:auto;display:flex;align-items:center;gap:9px"><span class="tchip t${t}">${tierLabel(t)}</span><span class="code">${p.code}-${p.num}</span><button class="star${pinned?' on':''}" data-pin="${p.id}" title="Pin as priority">${pinned?'★':'☆'}</button></span></div>
+        <span style="margin-left:auto;display:flex;align-items:center;gap:9px">${isEdited(p.id)?'<span class="echip">edited</span>':''}<span class="tchip t${t}">${tierLabel(t)}</span><span class="code">${p.code}-${p.num}</span><button class="star${pinned?' on':''}" data-pin="${p.id}" title="Pin as priority">${pinned?'★':'☆'}</button><button class="star" data-edit="${p.id}" title="Edit this point">✎</button></span></div>
         <div class="loc">${esc(p.location)}</div><div class="fns">${p.functions.map(f=>`<span>${esc(f)}</span>`).join('')}</div>
         ${p.categories.length?`<div class="roles">${p.categories.map(c=>`<span>${esc(c)}</span>`).join('')}</div>`:''}
+        ${p.note?`<div class="loc" style="color:var(--gold)">✎ ${esc(p.note)}</div>`:''}
+        <div class="editpanel" id="ep-${p.id}" style="display:none"></div>
         ${p.cautions.length?`<div class="caut">⚠ ${esc([...new Set(p.cautions.flatMap(c=>c.notes))].join(' · '))}</div>`:''}`;box.appendChild(d)});
     box.querySelectorAll('[data-pin]').forEach(b=>b.onclick=()=>{const id=b.dataset.pin;ST.pins=ST.pins||{};if(ST.pins[id])delete ST.pins[id];else ST.pins[id]=1;save();draw()});
+    box.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>{const id=b.dataset.edit;const p=ptById[id];const ep=$('#ep-'+id);
+      if(ep.style.display!=='none'){ep.style.display='none';ep.innerHTML='';return}
+      ep.innerHTML=`
+        <div class="erow"><label>Characters 漢字</label><input class="search ein" id="e-hz" value="${esc(p.hanzi)}"></div>
+        <div class="erow"><label>Pinyin</label><input class="search ein" id="e-py" value="${esc(p.pinyin)}"></div>
+        <div class="erow"><label>English name</label><input class="search ein" id="e-en" value="${esc(p.english)}"></div>
+        <div class="erow"><label>Location</label><textarea class="search ein" id="e-loc" style="height:70px">${esc(p.location)}</textarea></div>
+        <div class="erow"><label>Functions — one per line</label><textarea class="search ein" id="e-fn" style="height:88px">${esc(p.functions.join('\n'))}</textarea></div>
+        <div class="erow"><label>Personal note (shows on study cards)</label><textarea class="search ein" id="e-note" style="height:52px">${esc(p.note||'')}</textarea></div>
+        <div class="actions" style="justify-content:flex-start;gap:9px">
+          <button class="btn primary" id="e-save">Save</button>
+          <button class="btn ghost" id="e-cancel">Cancel</button>
+          ${isEdited(id)?'<button class="btn ghost" id="e-restore" style="margin-left:auto;color:var(--seal)">Restore default</button>':''}
+        </div>
+        <div class="count" style="margin-top:7px">Changes apply everywhere this point appears — cards, maps, cases, clinic. Your study schedule is untouched. Defaults are always recoverable.</div>`;
+      ep.style.display='block';
+      $('#e-save').onclick=()=>{const py=($('#e-py').value||'').trim();
+        if(!py){alert('Pinyin cannot be empty — it names the point across the app.');return}
+        const fns=($('#e-fn').value||'').split('\n').map(s=>s.trim()).filter(Boolean);
+        savePointEdit(id,{hanzi:($('#e-hz').value||'').trim(),pinyin:py,english:($('#e-en').value||'').trim(),location:($('#e-loc').value||'').trim(),functions:fns,note:$('#e-note').value||''});
+        toast('改','Point updated',p.code+'-'+p.num+' — your version now shows everywhere.');draw()};
+      $('#e-cancel').onclick=()=>{ep.style.display='none';ep.innerHTML=''};
+      const er=$('#e-restore');if(er)er.onclick=()=>{if(confirm('Restore '+p.code+'-'+p.num+' to the built-in data? Your custom text and note for this point will be removed.')){restorePoint(id);toast('復','Default restored',p.code+'-'+p.num);draw()}};});
     if(list.length>300)box.appendChild(el('div','count','Showing first 300 — refine your search.'))}
   draw()}
 
