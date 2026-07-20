@@ -452,7 +452,8 @@ function isAux(k){return k.indexOf('diff:')===0||k.endsWith(':map')}
 /* ============ STORAGE ============ */
 const store=(()=>{let mem={},ok=false;try{localStorage.setItem('__t','1');localStorage.removeItem('__t');ok=true}catch(e){}
  return{get:k=>{try{return ok?localStorage.getItem(k):(mem[k]??null)}catch(e){return mem[k]??null}},
-        set:(k,v)=>{try{ok?localStorage.setItem(k,v):(mem[k]=v)}catch(e){mem[k]=v}}}})();
+        set:(k,v)=>{try{ok?localStorage.setItem(k,v):(mem[k]=v)}catch(e){mem[k]=v}},
+        del:k=>{try{ok?localStorage.removeItem(k):(delete mem[k])}catch(e){delete mem[k]}}}})();
 const KEY='jingxue.v2';
 let ST=load();
 
@@ -483,7 +484,149 @@ function restorePoint(pid){if(ST.edits)delete ST.edits[pid];applyEdits();save()}
 applyEdits();
 function fresh(){return{srs:{},xp:0,streak:0,freeze:1,lastDay:null,reviews:0,dailyGoal:30,newCap:12,learnOrder:'priority',pins:{},edits:{},todayDate:null,todayCount:0,ach:{},celebGoal:null,soundOn:true,seenIntro:false}}
 function load(){try{const s=JSON.parse(store.get(KEY));return s&&s.srs?Object.assign(fresh(),s):fresh()}catch(e){return fresh()}}
-function save(){store.set(KEY,JSON.stringify(ST))}
+function save(){store.set(KEY,JSON.stringify(ST));schedulePush()}
+
+/* ============ CLOUD SYNC (Supabase, offline-first, optional) ============ */
+/* Fill these two in from your Supabase project (Settings -> API). They are
+   the PUBLIC anon values — safe to ship in client code; row-level security,
+   not secrecy, protects the data. Leave blank to disable sync entirely
+   (app then behaves exactly as the offline-only version). */
+const SUPABASE_URL = 'https://sbaekrboqpfgcdxuzqnu.supabase.co';      // e.g. https://abcdefgh.supabase.co
+const SUPABASE_ANON = 'sb_publishable_STw2NouLZphaCpPZOqnXKQ_SEnfzRRN';     // the long public "anon"/"publishable" key
+
+const SYNC_ON = !!(SUPABASE_URL && SUPABASE_ANON);
+const AUTHK = 'jingxue_auth';   // stores {access_token, refresh_token, email, uid}
+let AUTH = (()=>{ try{return JSON.parse(store.get(AUTHK))||null}catch(e){return null} })();
+let pushTimer=null, syncing=false, lastSyncMsg='';
+
+function authHeaders(){return {'apikey':SUPABASE_ANON,'Authorization':'Bearer '+((AUTH&&AUTH.access_token)||SUPABASE_ANON),'Content-Type':'application/json'}}
+async function sb(path, opts={}){const r=await fetch(SUPABASE_URL+path,{...opts,headers:{...authHeaders(),...(opts.headers||{})}});
+  const txt=await r.text();let body;try{body=txt?JSON.parse(txt):null}catch(e){body=txt}
+  if(!r.ok)throw new Error((body&&(body.error_description||body.msg||body.message||body.error))||('HTTP '+r.status));return body}
+
+/* ---- auth: email one-time code (OTP) ---- */
+async function authSendCode(email){
+  await sb('/auth/v1/otp',{method:'POST',body:JSON.stringify({email,create_user:true})});
+}
+async function authVerifyCode(email, code){
+  const d=await sb('/auth/v1/verify',{method:'POST',body:JSON.stringify({type:'email',email,token:code})});
+  AUTH={access_token:d.access_token,refresh_token:d.refresh_token,email,uid:d.user&&d.user.id};
+  store.set(AUTHK,JSON.stringify(AUTH));
+  return AUTH;
+}
+async function authRefresh(){
+  if(!AUTH||!AUTH.refresh_token)throw new Error('not signed in');
+  const d=await sb('/auth/v1/token?grant_type=refresh_token',{method:'POST',body:JSON.stringify({refresh_token:AUTH.refresh_token})});
+  AUTH={...AUTH,access_token:d.access_token,refresh_token:d.refresh_token};
+  store.set(AUTHK,JSON.stringify(AUTH));
+}
+function signedIn(){return !!(AUTH&&AUTH.access_token)}
+function signOut(){AUTH=null;store.del(AUTHK);syncMsg('Signed out')}
+
+/* ---- merge: two states -> one. Per-SRS-key keep the more-studied record;
+        counters take the max; edits/pins/settings prefer the newer save. ---- */
+function mergeStates(local, remote){
+  if(!remote) return local; if(!local) return remote;
+  const newer = (remote._ts||0) > (local._ts||0) ? remote : local;
+  const out = Object.assign({}, newer);
+  // SRS: union of keys, keep the card with more reps (ties -> later due)
+  const srs={}; const keys=new Set([...Object.keys(local.srs||{}),...Object.keys(remote.srs||{})]);
+  keys.forEach(k=>{const a=(local.srs||{})[k], b=(remote.srs||{})[k];
+    if(!a){srs[k]=b;return} if(!b){srs[k]=a;return}
+    const ra=a.reps||0, rb=b.reps||0;
+    srs[k]= ra!==rb ? (ra>rb?a:b) : ((a.due||0)>=(b.due||0)?a:b);});
+  out.srs=srs;
+  out.xp=Math.max(local.xp||0, remote.xp||0);
+  out.reviews=Math.max(local.reviews||0, remote.reviews||0);
+  out.streak=Math.max(local.streak||0, remote.streak||0);
+  out.freeze=Math.max(local.freeze||0, remote.freeze||0);
+  out.ach=Object.assign({}, remote.ach||{}, local.ach||{});   // earned-once, keep all
+  out.pins=newer.pins||{}; out.edits=newer.edits||{};
+  // today counters: if same day keep the max, else the newer save's
+  if((local.todayDate)===(remote.todayDate)){out.todayDate=local.todayDate;out.todayCount=Math.max(local.todayCount||0,remote.todayCount||0);}
+  return out;
+}
+
+/* ---- pull on launch, push (debounced) after saves ---- */
+async function withAuth(fn){ try{return await fn()}catch(e){
+  if(/JWT|expired|401/i.test(e.message)&&AUTH){ await authRefresh(); return await fn(); } throw e; } }
+async function cloudPull(){
+  return withAuth(async()=>{
+    const rows=await sb('/rest/v1/progress?select=state&user_id=eq.'+AUTH.uid,{method:'GET'});
+    return (rows&&rows[0]&&rows[0].state)||null;
+  });
+}
+async function cloudPush(state){
+  return withAuth(async()=>{
+    const row={user_id:AUTH.uid, state:{...state,_ts:Date.now()}, updated_at:new Date().toISOString()};
+    await sb('/rest/v1/progress?on_conflict=user_id',{method:'POST',
+      headers:{'Prefer':'resolution=merge-duplicates,return=minimal'}, body:JSON.stringify(row)});
+  });
+}
+function schedulePush(){ if(!SYNC_ON||!signedIn())return;
+  clearTimeout(pushTimer); pushTimer=setTimeout(()=>doSync('push'), 4000); }
+async function doSync(kind){
+  if(!SYNC_ON||!signedIn()||syncing||navigator.onLine===false)return;
+  syncing=true; syncMsg('Syncing…');
+  try{
+    if(kind!=='push'){ const remote=await cloudPull();
+      if(remote){ ST=mergeStates(ST,remote); store.set(KEY,JSON.stringify(ST)); } }
+    await cloudPush(ST);
+    syncMsg('Synced · '+new Date().toLocaleTimeString());
+    if(kind!=='push'){ syncHeader&&syncHeader(); if(view==='home')renderHome(); }
+  }catch(e){ syncMsg('Sync error: '+e.message); }
+  finally{ syncing=false; }
+}
+function syncMsg(m){ lastSyncMsg=m; const el=document.getElementById('syncStat'); if(el)el.textContent=m; }
+
+/* launch: pull+merge once, then keep pushing on saves */
+if(SYNC_ON&&signedIn()){ addEventListener('load',()=>{ setTimeout(()=>doSync('pull'),600); }); }
+addEventListener('online',()=>{ if(SYNC_ON&&signedIn())doSync('push'); });
+try{ if(navigator.storage&&navigator.storage.persist)navigator.storage.persist(); }catch(e){}
+
+/* ---- Settings panel: Account & sync ---- */
+function renderAccount(mount){
+  const box=el('div','setup');
+  if(!SYNC_ON){
+    box.innerHTML=`<div class="row"><label>Account &amp; sync</label>
+      <div style="color:var(--paper-faint);font-size:13.5px">Cloud sync isn't configured in this build. Your progress is saved on this device only — <b>export a backup regularly</b> so a cleared browser can't wipe it.</div></div>`;
+    mount.appendChild(box); return;
+  }
+  if(signedIn()){
+    box.innerHTML=`<div class="row"><label>Account &amp; sync</label>
+      <div style="color:var(--paper2);font-size:13.5px;margin-bottom:9px">Signed in as <b>${esc(AUTH.email||'')}</b>. Progress syncs automatically — clear your cache all you like, it comes back.</div>
+      <div class="count" id="syncStat">${esc(lastSyncMsg||'Ready')}</div>
+      <div class="actions" style="justify-content:flex-start;gap:9px;margin-top:8px">
+        <button class="btn primary" id="syncNow">Sync now</button>
+        <button class="btn ghost" id="signOut" style="color:var(--seal)">Sign out</button></div></div>`;
+    mount.appendChild(box);
+    $('#syncNow').onclick=()=>doSync('pull');
+    $('#signOut').onclick=()=>{ if(confirm('Sign out on this device? Your progress stays in the cloud and on this device until a cache clear.')){signOut();openSettings();} };
+    return;
+  }
+  box.innerHTML=`<div class="row"><label>Account &amp; sync</label>
+    <div style="color:var(--paper-faint);font-size:13.5px;margin-bottom:10px">Sign in to back your progress up to the cloud and sync across devices. We email you a 6-digit code — no password.</div>
+    <div class="erow"><label>Email</label><input class="search ein" id="au-email" type="email" placeholder="you@example.com" autocomplete="email"></div>
+    <div class="actions" style="justify-content:flex-start"><button class="btn primary" id="au-send">Email me a code</button></div>
+    <div id="au-step2" style="display:none;margin-top:12px">
+      <div class="erow"><label>6-digit code</label><input class="search ein" id="au-code" inputmode="numeric" placeholder="123456"></div>
+      <div class="actions" style="justify-content:flex-start"><button class="btn primary" id="au-verify">Verify &amp; sync</button></div></div>
+    <div class="count" id="au-msg" style="margin-top:8px"></div></div>`;
+  mount.appendChild(box);
+  const msg=t=>{$('#au-msg').textContent=t};
+  $('#au-send').onclick=async()=>{const email=($('#au-email').value||'').trim();
+    if(!/.+@.+\..+/.test(email))return msg('Enter a valid email.');
+    msg('Sending…');
+    try{ await authSendCode(email); $('#au-step2').style.display='block'; msg('Code sent — check your inbox (and spam).'); }
+    catch(e){ msg('Could not send: '+e.message); }};
+  $('#au-verify').onclick=async()=>{const email=($('#au-email').value||'').trim();const code=($('#au-code').value||'').trim();
+    if(!code)return msg('Enter the code from your email.');
+    msg('Verifying…');
+    try{ await authVerifyCode(email, code); msg('Signed in — merging your progress…'); await doSync('pull'); openSettings(); }
+    catch(e){ msg('Verify failed: '+e.message); }};
+}
+
+
 const DAY=86400000,MIN=60000,now=()=>Date.now();
 const todayStr=()=>new Date().toISOString().slice(0,10);
 function ymd(off){return new Date(Date.now()+off*DAY).toISOString().slice(0,10)}
@@ -1297,6 +1440,7 @@ function openSettings(){const m=$('#viewMount');m.innerHTML='';go('view');ac();
       </div>
       <div class="setup"><div class="row"><label>Streak protection</label>
         <div style="color:var(--paper2);font-size:14px">🔥 ${ST.streak}-day streak · ❄ ${ST.freeze} freeze${ST.freeze===1?'':'s'} banked. A freeze auto-covers one missed day so the streak survives — you earn one per 7-day run, up to three.</div></div></div>
+      <div id="acctMount"></div>
       <div class="setup"><div class="row"><label>Customised points</label>
         <div style="color:var(--paper2);font-size:13.5px;margin-bottom:${editedCount()?'11px':'0'}"><b>${editedCount()}</b> point${editedCount()===1?'':'s'} carrying your own edits or notes${editedCount()?'':' — edit any point via ✎ in the Atlas'}. Edits travel with backups.</div>
         ${editedCount()?'<div class="actions" style="justify-content:flex-start"><button class="btn ghost" id="restoreAllEdits">Restore ALL points to defaults</button></div>':''}
@@ -1321,6 +1465,7 @@ function openSettings(){const m=$('#viewMount');m.innerHTML='';go('view');ac();
     m.querySelectorAll('[data-ord]').forEach(x=>x.onclick=()=>{ST.learnOrder=x.dataset.ord;save();draw()});
     m.querySelectorAll('[data-snd]').forEach(x=>x.onclick=()=>{ST.soundOn=x.dataset.snd==='1';save();syncHeader();if(ST.soundOn){ac();sfx('good')}draw()});
     $('#bkExport').onclick=downloadBackup;
+    const am=$('#acctMount');if(am){am.innerHTML='';renderAccount(am)}
     const rae=$('#restoreAllEdits');if(rae)rae.onclick=()=>{if(confirm('Restore ALL '+editedCount()+' customised points to the built-in data? Every edit and note will be removed. This cannot be undone (export a backup first if unsure).')){ST.edits={};applyEdits();save();toast('復','All defaults restored','');draw()}};
     $('#bkCopy').onclick=copyBackup;
     $('#bkImportFile').onclick=()=>$('#bkFile').click();
