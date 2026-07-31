@@ -66,3 +66,49 @@ LOCATE POINTS (new) + body-diagram status
   head/neck-only ML data; NIH's TARA atlas is forthcoming; commercial apps are
   proprietary). Faking pixel positions would teach wrong locations, so it is deferred
   until coordinates are authored in-app or an open atlas (TARA) becomes available.
+
+CATEGORIES, RESONANCE & STAGED HONOURS (v19)
+  Two new sessions (also in the picker):
+    Categories 類穴  - the command-point system drilled both ways: a point's
+                       category, and picking the category's member from a set.
+                       210 items.
+    Region Resonance 應區 - which body region a point commands, and which point
+                       answers a region. Bidirectional, built from the Envoy
+                       data. 84 items.
+    Both feed Revise once studied, but are only introduced in their own modes
+    (so a Mixed session won't flood you with them).
+  Honours rebuilt: 55 now, in five stages (Novice / Apprentice / Journeyman /
+    Physician / Master). Each stage holds several sections - Practice,
+    Consistency, Ground, Craft, Channels, Categories - so there is always a
+    near milestone even though the whole arc is long. One honour per channel
+    (15) and one per command category (10). Collapsed on the home screen;
+    tap "Honours" to open.
+  Fixed: session titles rendered in the browser's default black on the dark
+    cards (the button had no colour set). Same latent issue fixed on .btn.
+
+UNIFIED SESSIONS + IN-SESSION EDITING (v20)
+  Home screen is now three choices instead of ten:
+    Balanced Practice 均習 - a little of everything, weighted to names/locations
+    Clinical Focus    臨習 - weighted to functions, categories, resonance,
+                             differentiation and multi-step cases
+    Review Only       復習 - just what is due, nothing new
+  Both weighted sessions draw from ONE pool covering every drill type (point
+  cards, location, channel map, categories, resonance, function, command
+  matrix, clinical reasoning, envoys, dui yao, safety, differentiate,
+  characters, and multi-step clinical cases). Weightings decide the mix.
+  Session length: a 5-30 minute slider. A multi-step case counts as ~6 cards.
+  Sessions fill with due cards first, then new (scaled to length), then early
+  review so the chosen length is honoured.
+  "Learn new points" and "Full clinic case" remain as links below; every
+  individual drill is still in the collapsed mode library.
+
+  Categories 類穴 now runs all three ways, including the one that matters most
+  in clinic: "which point is the Yuan-Source of the Kidney channel?" (111 items).
+
+  Edit a point mid-session: the pencil in the session header opens the editor
+  for whatever point the card is about; saving redraws the card at once.
+
+  Channel Map no longer prints the code-number beside each option - the track
+  showed the position AND the options showed the number, so it could be solved
+  by arithmetic. Options now show pinyin (and English); the answer still teaches
+  the code.

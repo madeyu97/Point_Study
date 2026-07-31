@@ -358,6 +358,22 @@ table.matrix td.rev .py{display:block;font-family:var(--disp);font-style:italic;
 .choice.sel{border-color:var(--gold2);background:rgba(216,175,82,.12);color:var(--paper)}
 .choice.missed{border-color:var(--jade);background:rgba(143,181,151,.10)}
 .hint{text-align:center;color:var(--paper-faint);font-size:12.5px;font-family:var(--disp);letter-spacing:1px;margin-bottom:9px}
+.durbox{background:var(--ink2);border:1px solid var(--line);border-radius:14px;padding:13px 16px 9px;margin:2px 0 13px}
+.durtop{display:flex;align-items:baseline;justify-content:space-between;font-family:var(--disp);font-size:12.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--paper-faint)}
+.durtop b{font-size:17px;letter-spacing:.5px;text-transform:none;color:var(--gold)}
+.durbox input[type=range]{width:100%;margin:9px 0 2px;accent-color:var(--seal);background:transparent}
+.durticks{display:flex;justify-content:space-between;font-family:var(--disp);font-size:10.5px;color:var(--line3)}
+.sublinks{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:13px 0 2px}
+.sublinks button{background:none;border:none;color:var(--paper-faint);font-family:var(--disp);font-size:13.5px;letter-spacing:.5px;cursor:pointer;padding:8px 10px;transition:.15s}
+.sublinks button:hover{color:var(--gold)}
+.qedit{background:none;border:1px solid var(--line2);color:var(--paper-faint);border-radius:9px;width:28px;height:28px;font-size:14px;cursor:pointer;margin-right:9px;transition:.15s;display:none}
+.qedit:hover{color:var(--gold);border-color:var(--gold2)}
+.ovl{position:fixed;inset:0;background:rgba(10,8,6,.82);z-index:200;display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:22px 14px;backdrop-filter:blur(3px)}
+.ovlbox{width:100%;max-width:520px;background:var(--panel);border:1px solid var(--line2);border-radius:16px;padding:16px 18px;box-shadow:var(--shadow)}
+.ovlhead{display:flex;align-items:center;gap:9px;margin-bottom:14px;font-family:var(--disp);font-size:19px;color:var(--paper)}
+.ovlhead b{font-style:italic;color:var(--gold)}
+.ovlhead span{font-size:12px;color:var(--seal);letter-spacing:1px}
+.ovlx{margin-left:auto;background:none;border:none;color:var(--paper-faint);font-size:19px;cursor:pointer}
 .echip{font-family:var(--disp);font-size:10.5px;letter-spacing:1px;text-transform:uppercase;font-weight:600;padding:2px 8px;border-radius:10px;border:1px solid var(--gold2);color:var(--gold)}
 .editpanel{margin-top:12px;padding-top:12px;border-top:1px dashed var(--line2)}
 .erow{margin-bottom:10px}
@@ -492,7 +508,7 @@ function savePointEdit(pid,fields){ST.edits=ST.edits||{};
   applyEdits();save();return true}
 function restorePoint(pid){if(ST.edits)delete ST.edits[pid];applyEdits();save()}
 applyEdits();
-function fresh(){return{srs:{},xp:0,streak:0,freeze:1,lastDay:null,reviews:0,dailyGoal:30,newCap:12,learnOrder:'priority',pins:{},edits:{},todayDate:null,todayCount:0,ach:{},celebGoal:null,soundOn:true,seenIntro:false}}
+function fresh(){return{srs:{},xp:0,streak:0,freeze:1,lastDay:null,reviews:0,dailyGoal:30,newCap:12,sessionMins:10,learnOrder:'priority',pins:{},edits:{},todayDate:null,todayCount:0,ach:{},celebGoal:null,soundOn:true,seenIntro:false}}
 function load(){try{const s=JSON.parse(store.get(KEY));return s&&s.srs?Object.assign(fresh(),s):fresh()}catch(e){return fresh()}}
 function save(){store.set(KEY,JSON.stringify(ST));schedulePush()}
 
@@ -873,31 +889,34 @@ function renderHome(){
     <div class="v" style="margin-top:6px;color:var(--paper-faint);font-size:13px">🔥 ${ST.streak}-day streak · ❄ ${ST.freeze} freeze</div></div>`;
   board.append(rankc,goalc);h.appendChild(board);
   // CTA — explicit Revise vs Learn tracks
-  // ===== Today's Session — pick one =====
-  h.appendChild(secHead("Today's Session",'今日 · choose one'));
-  const stat=(n,word,zeroWord)=>n>0?`<div class="sstat"><b>${n}</b><small>${word}</small></div>`:`<div class="sstat zero"><b>·</b><small>${zeroWord}</small></div>`;
-  const startedP=p=>['loc','func','name2fn','name2loc'].some(d=>ST.srs[p.id+':'+d]);
-  const SESS=[
-    {id:'practice',gl:'綜',name:'Mixed Practice',cn:'綜習',what:'A balanced mix — what is due, plus a little new',st:stat(due,'due','ready'),pri:1},
-    {id:'revise',gl:'習',name:'Revise',cn:'復習',what:'Only the cards scheduled for today',st:stat(due,'due','clear')},
-    {id:'learn',gl:'新',name:'Learn New Points',cn:'新學',what:'Meet new points in clinical-priority order',st:stat(newPts,'new','done')},
-    {id:'cases',gl:'案',name:'Clinical Cases',cn:'醫案',what:'Reason a scenario through to the point',st:stat(modeDue('cases'),'due','ready')},
-    {id:'tutor',gl:'臨',name:'Clinic',cn:'臨床',what:'Full case: pattern → principle → points (+ AI online)',st:stat(modeDue('tutor'),'due','ready')},
-    {id:'locate',gl:'取',name:'Locations',cn:'取穴',what:'Recall and write where points sit',st:stat(modeDue('locate'),'due','ready')},
-    {id:'cmap',gl:'經',name:'Channel Map',cn:'經絡',what:'Walk a channel point by point',st:stat(modeDue('cmap'),'due','open')},
-    {id:'compare',gl:'辨',name:'Differentiate',cn:'辨異',what:'Tell apart look-alike & neighbouring points',st:stat(modeDue('compare'),'due','ready')},
-    {id:'cats',gl:'類',name:'Categories',cn:'類穴',what:'Drill the command-point system both ways',st:stat(modeDue('cats'),'due','ready')},
-    {id:'region',gl:'應',name:'Region Resonance',cn:'應區',what:'Which points command which body regions',st:stat(modeDue('region'),'due','ready')},
-    {id:'chars',gl:'字',name:'Characters',cn:'漢字',what:'Drill the characters and radicals',st:stat(modeDue('chars'),'due','ready')}
-  ];
+  // ===== Today's Session — three choices, one pool =====
+  h.appendChild(secHead("Today's Session",'今日'));
+  const mins=ST.sessionMins||10;
+  const dur=el('div','durbox');
+  dur.innerHTML=`<div class="durtop"><span>Session length</span><b id="durval">${mins} min</b></div>
+    <input type="range" id="durslide" min="5" max="30" step="5" value="${mins}">
+    <div class="durticks"><span>5</span><span>10</span><span>15</span><span>20</span><span>25</span><span>30</span></div>`;
+  h.appendChild(dur);
   const slist=el('div','sesslist');
-  SESS.forEach(s=>{const c=el('button','sess'+(s.pri?' primary':''));
-    c.innerHTML=`<div class="sgl">${s.gl}</div><div class="sbody"><div class="stitle">${s.name}<span class="scn">${s.cn}</span></div><div class="swhat">${s.what}</div></div>${s.st}`;
-    c.onclick=()=>openMode(s.id);slist.appendChild(c)});
+  ['balanced','clinical','reviewonly'].forEach(id=>{const s=SESSION_SPECS[id];
+    const c=el('button','sess'+(s.pri?' primary':''));
+    const st=s.reviewOnly
+      ? (due>0?`<div class="sstat"><b>${due}</b><small>due</small></div>`:`<div class="sstat zero"><b>·</b><small>clear</small></div>`)
+      : `<div class="sstat"><b>~${itemsForMins(mins)}</b><small>items</small></div>`;
+    c.innerHTML=`<div class="sgl">${s.gl}</div><div class="sbody"><div class="stitle">${s.name}<span class="scn">${s.cn}</span></div><div class="swhat">${s.what}</div></div>${st}`;
+    c.onclick=()=>{ac();startUnified($('#viewMount'),id);go('view')};
+    slist.appendChild(c)});
   h.appendChild(slist);
-  const quick=el('button','quicklink');quick.innerHTML='Short on time? <b>Quick 10 →</b>';
-  quick.onclick=()=>{ac();startQuiz($('#viewMount'),allItems(),{title:'Quick Practice',cn:'速習',deck:'Mixed',cap:10,newcap:6,sessionMode:'mixed',excludeAux:true},'practice')};
-  h.appendChild(quick);
+  const links=el('div','sublinks');
+  links.innerHTML=`<button id="goLearn">Learn new points →</button><button id="goClinic">Full clinic case →</button>`;
+  h.appendChild(links);
+  $('#durslide').oninput=e=>{ST.sessionMins=+e.target.value;save();
+    $('#durval').textContent=ST.sessionMins+' min';
+    const n=itemsForMins(ST.sessionMins);
+    h.querySelectorAll('.sess .sstat b').forEach((b,i)=>{if(i<2)b.textContent='~'+n})};
+  $('#goLearn').onclick=()=>openMode('learn');
+  $('#goClinic').onclick=()=>openMode('tutor');
+  const startedP=p=>['loc','func','name2fn','name2loc'].some(d=>ST.srs[p.id+':'+d]);
   if(newPts>0){const nextUp=DB.points.filter(p=>!startedP(p)).sort((a,b)=>priorityScore(b.id)-priorityScore(a.id)).slice(0,5);
     h.appendChild(el('div','nextup','Next to learn — '+nextUp.map(p=>`<b>${esc(p.pinyin)}</b> ${p.code}-${p.num}`).join(' · ')));}
   // mastery
@@ -1026,6 +1045,16 @@ function buildCats(){const out=[];
       choices:shuffle([{correct:true,html:optRow(p)},...wrong.map(q=>({correct:false,html:optRow(q)}))]),
       answerHTML:nameBlock(p)+`<div class="extra"><div class="l">roles</div><div class="cats">${p.categories.map(c=>`<span>${esc(c)}</span>`).join('')}</div></div>`});
   })});
+  // C. category + channel → which point (the direction you actually reach for in clinic)
+  DB.categoryNaming.forEach(c=>{const p=DB.points.find(x=>norm(x.pinyin)===norm(c.pinyin));if(!p)return;
+    const same=channelPoints(c.channel).filter(q=>q.id!==p.id);
+    const wrong=sample(same.length>=3?same:DB.points.filter(q=>q.id!==p.id&&q.pinyin),3);
+    if(wrong.length<2)return;
+    out.push({key:'cat:name:'+norm(c.channel)+':'+norm(c.category),deck:'Categories',tagText:'Category + channel → point',
+      promptHTML:`<div class="ask">Which point is this?</div><div class="prompt"><b style="color:var(--gold)">${esc(c.category)}</b><br>of the <b style="color:var(--seal)">${esc(c.channel)}</b> channel</div>`,
+      choices:shuffle([{correct:true,html:optRow(p)},...wrong.map(q=>({correct:false,html:optRow(q)}))]),
+      answerHTML:nameBlock(p)+fnsBlock(p)});
+  });
   return out}
 
 /* ---- Region resonance (應): which body regions a point commands, both ways ---- */
@@ -1151,7 +1180,7 @@ function buildMapItems(chans){const out=[];(chans||CHAN.filter(c=>c!=='Extra')).
     const opts=shuffle([{p,c:true},...sample(near,3).map(q=>({p:q,c:false}))]);
     out.push({key:p.id+':map',deck:ch,tagText:'Identify on channel',
       promptHTML:`<div class="ask">${esc(ch)} channel — name the highlighted point (position ${i+1} of ${pts.length})</div>`+miniTrack(pts,i),
-      choices:opts.map(o=>({correct:o.c,html:`${esc(o.p.pinyin)} <span style="color:var(--paper-faint)">${o.p.code}-${o.p.num}</span>`})),
+      choices:opts.map(o=>({correct:o.c,html:`${esc(o.p.pinyin)}${o.p.english?` <span style="color:var(--paper-faint)">${esc(o.p.english)}</span>`:''}`})),
       answerHTML:`<div class="py">${esc(p.pinyin)}</div><div class="code">${p.code}-${p.num}</div>${p.english?`<div class="en">${esc(p.english)}</div>`:''}<div class="loc">${esc(p.location)}</div>`+neighbourLine(pts,i)})})});return out}
 const LANDMARKS=['pisiform','transverse crease of the wrist','crease of the wrist','wrist crease','cubital crease','elbow crease','popliteal','medial malleolus','lateral malleolus','umbilicus','nipple','medial epicondyle','lateral epicondyle','patella','greater trochanter'];
 function landmarkClusters(){const map={};
@@ -1488,7 +1517,150 @@ function renderLocate(mount){let active='All';
   const cont=$('#locch');['All',...CHAN.filter(c=>c!=='Extra'),'Extra'].forEach(c=>{const x=el('div','chip'+(c===active?' on':''),c==='All'?'All channels':esc(c));x.onclick=()=>{active=c;[...cont.children].forEach(n=>n.classList.remove('on'));x.classList.add('on')};cont.appendChild(x)});
   $('#locstart').onclick=start}
 
+/* ============ UNIFIED SESSIONS — one pool, weighted differently ============ */
+function itemFamily(k){
+  if(k.indexOf('diff:')===0)return 'diff';
+  if(k.indexOf('cat:')===0)return 'cats';
+  if(k.indexOf('rg:')===0)return 'region';
+  if(k.indexOf('cn:')===0)return 'matrix';
+  if(k.indexOf('clin:')===0)return 'clin';
+  if(k.indexOf('envoy:')===0)return 'envoy';
+  if(k.indexOf('dui:')===0)return 'dui';
+  if(k.indexOf('safe:')===0)return 'safe';
+  if(k.indexOf('hz:')===0)return 'chars';
+  if(k.indexOf('case:')===0)return 'case';
+  if(k.endsWith(':map'))return 'map';
+  if(k.endsWith(':next'))return 'location';
+  return 'point';
+}
+const SESSION_SPECS={
+  balanced:{id:'balanced',gl:'均',name:'Balanced Practice',cn:'均習',pri:1,
+    what:'A little of everything — names, locations, channels, functions, cases',
+    w:{point:30,location:10,map:9,cats:8,region:6,matrix:5,clin:5,envoy:4,dui:4,safe:3,diff:5,chars:4,case:6}},
+  clinical:{id:'clinical',gl:'臨',name:'Clinical Focus',cn:'臨習',
+    what:'Weighted to reasoning — functions, categories, resonance, cases',
+    w:{point:12,location:4,map:4,cats:15,region:12,matrix:9,clin:11,envoy:7,dui:9,safe:5,diff:11,chars:0,case:15}},
+  reviewonly:{id:'reviewonly',gl:'復',name:'Review Only',cn:'復習',reviewOnly:true,
+    what:'Only what is due — nothing new introduced'}
+};
+const ITEM_COST=it=>it.kind==='case'?6:1;
+function itemsForMins(m){return Math.max(6,Math.round((m||10)*5))}
+function unifiedPool(){
+  const src=[].concat(
+    pointItems(DB.points,['loc','func','name2fn','name2loc']),
+    locationItems(DB.points), buildFunc(), buildMatrix(), buildClinic(),
+    buildEnvoy(), buildDui(), buildSafe(),
+    buildMapItems(CHAN.filter(c=>c!=='Extra')), buildDiffItems(),
+    buildCats(), buildRegion(), buildCharItems());
+  // several builders legitimately share a key (same fact, different presentation) —
+  // keep one at random so a session never shows the same card twice
+  const by={};src.forEach(it=>{(by[it.key]=by[it.key]||[]).push(it)});
+  return Object.keys(by).map(k=>by[k].length===1?by[k][0]:sample(by[k],1)[0]);
+}
+function caseEntries(){return buildCases().map(c=>Object.assign({},c,{kind:'case',deck:'Case',tagText:c.label||'Clinical case'}))}
+function weightedPick(groups,weights,budget){
+  const out=[];const w=Object.assign({},weights);let left=budget,guard=0;
+  while(left>0&&guard++<4000){
+    const live=Object.keys(groups).filter(f=>groups[f].length&&(w[f]||0)>0);
+    if(!live.length)break;
+    const tot=live.reduce((s,f)=>s+w[f],0);
+    let r=Math.random()*tot,pick=live[0];
+    for(const f of live){r-=w[f];if(r<=0){pick=f;break}}
+    const it=groups[pick][0],c=ITEM_COST(it);
+    if(c>left){w[pick]=0;continue}      // can't afford this family's next item — stop drawing from it
+    groups[pick].shift();out.push(it);left-=c;
+  }
+  return out;
+}
+function buildUnifiedQueue(spec,target){
+  const pool=unifiedPool();
+  const wantCases=spec.reviewOnly||(spec.w&&spec.w.case>0);
+  const all=wantCases?pool.concat(caseEntries()):pool;
+  const isDue=it=>{const s=ST.srs[it.key];return s&&s.due<=now()};
+  const byUrgency=(a,b)=>((ST.srs[b.key].leech?1:0)-(ST.srs[a.key].leech?1:0))||(itemImp(b)-itemImp(a));
+  if(spec.reviewOnly){
+    const due=all.filter(isDue).sort(byUrgency);
+    const q=[];let left=target;
+    for(const it of due){const c=ITEM_COST(it);if(c>left)continue;q.push(it);left-=c}
+    return shuffle(q);
+  }
+  const grp=arr=>{const g={};arr.forEach(it=>{const f=itemFamily(it.key);(g[f]=g[f]||[]).push(it)});return g};
+  const dueG=grp(all.filter(isDue));Object.keys(dueG).forEach(f=>dueG[f].sort(byUrgency));
+  const newG=grp(shuffle(all.filter(it=>!ST.srs[it.key])));
+  Object.keys(newG).forEach(f=>newG[f].sort((a,b)=>itemImp(b)-itemImp(a)));
+  // newCap is calibrated per 10-minute session; scale it so the length slider means something
+  const newBudget=Math.max(2,Math.round((ST.newCap||12)*target/50));
+  const picked=weightedPick(dueG,spec.w,Math.max(0,target-newBudget))
+        .concat(weightedPick(newG,spec.w,newBudget));
+  // top up with early review so a 30-minute session really is 30 minutes
+  let spent=picked.reduce((s,it)=>s+ITEM_COST(it),0);
+  if(spent<target){
+    const taken=new Set(picked.map(it=>it.key));
+    const laterG=grp(all.filter(it=>{const s=ST.srs[it.key];return s&&s.due>now()&&!taken.has(it.key)}));
+    Object.keys(laterG).forEach(f=>laterG[f].sort((a,b)=>ST.srs[a.key].due-ST.srs[b.key].due));
+    picked.push(...weightedPick(laterG,spec.w,target-spent));
+  }
+  return shuffle(picked);
+}
+function startUnified(mount,specId){
+  const spec=SESSION_SPECS[specId];if(!spec)return;
+  const target=itemsForMins(ST.sessionMins);
+  const queue=buildUnifiedQueue(spec,target);
+  startQuiz(mount,queue,{title:spec.name,cn:spec.cn,deck:spec.name,sessionMode:'preset',preset:specId},specId);
+}
+
+/* ============ IN-SESSION POINT EDITING ============ */
+/* Which point (if any) is a card actually about — so it can be corrected on the spot. */
+function itemPoint(it){if(!it||!it.key)return null;const k=it.key,s=k.split(':');
+  if(ptById[s[0]])return ptById[s[0]];
+  if(k.indexOf('cat:role:')===0)return ptById[s[2]]||null;
+  if(k.indexOf('cat:pick:')===0)return ptById[s[3]]||null;
+  if(k.indexOf('cat:name:')===0){const c=DB.categoryNaming.find(x=>norm(x.channel)===s[2]&&norm(x.category)===s[3]);
+    return c?(DB.points.find(p=>norm(p.pinyin)===norm(c.pinyin))||null):null}
+  if(k.indexOf('rg:')===0){const e=DB.envoy[+s[2]];return e?resolveCode(e.answer):null}
+  if(k.indexOf('diff:')===0)return ptById[s[2]]||null;
+  if(k.indexOf('cn:')===0){const c=DB.categoryNaming.find(x=>x.channel===s[1]&&x.category===s[2]);
+    return c?(DB.points.find(p=>norm(p.pinyin)===norm(c.pinyin))||null):null}
+  if(k.indexOf('safe:')===0){const c=DB.contraindications[+s[1]];return c?resolveCode(c.point):null}
+  return null}
+/* After an edit, rebuild the card so the correction shows immediately. */
+function regenItem(it){const s=it.key.split(':'),p=ptById[s[0]];if(!p)return it;
+  if(['loc','func','name2fn','name2loc'].indexOf(s[1])>=0)return pointItems([p],[s[1]])[0]||it;
+  if(s[1]==='next')return locationItems([p]).find(x=>x.key===it.key)||it;
+  if(s[1]==='map')return buildMapItems([p.channel]).find(x=>x.key===it.key)||it;
+  return it}
+function openPointEditor(p,onSaved){if(!p)return;
+  const ov=el('div','ovl');
+  ov.innerHTML=`<div class="ovlbox">
+    <div class="ovlhead"><b>${esc(p.pinyin)}</b> <span>${p.code}-${p.num} · ${esc(p.channel)}</span><button class="ovlx" id="ov-x">✕</button></div>
+    <div class="erow"><label>Characters 漢字</label><input class="search ein" id="ov-hz" value="${esc(p.hanzi)}"></div>
+    <div class="erow"><label>Pinyin</label><input class="search ein" id="ov-py" value="${esc(p.pinyin)}"></div>
+    <div class="erow"><label>English name</label><input class="search ein" id="ov-en" value="${esc(p.english)}"></div>
+    <div class="erow"><label>Location</label><textarea class="search ein" id="ov-loc" style="height:76px">${esc(p.location)}</textarea></div>
+    <div class="erow"><label>Functions — one per line</label><textarea class="search ein" id="ov-fn" style="height:92px">${esc(p.functions.join('\n'))}</textarea></div>
+    <div class="erow"><label>Personal note</label><textarea class="search ein" id="ov-note" style="height:52px">${esc(p.note||'')}</textarea></div>
+    <div class="actions" style="justify-content:flex-start;gap:9px">
+      <button class="btn primary" id="ov-save">Save</button>
+      <button class="btn ghost" id="ov-cancel">Cancel</button>
+      ${isEdited(p.id)?'<button class="btn ghost" id="ov-restore" style="margin-left:auto;color:var(--seal)">Restore default</button>':''}
+    </div>
+    <div class="count" style="margin-top:7px">Applies everywhere this point appears. Your schedule is untouched.</div>
+  </div>`;
+  document.body.appendChild(ov);
+  const close=()=>{try{ov.remove()}catch(e){}};
+  $('#ov-x').onclick=close;$('#ov-cancel').onclick=close;
+  $('#ov-save').onclick=()=>{const py=($('#ov-py').value||'').trim();
+    if(!py){alert('Pinyin cannot be empty — it names the point across the app.');return}
+    savePointEdit(p.id,{hanzi:($('#ov-hz').value||'').trim(),pinyin:py,english:($('#ov-en').value||'').trim(),
+      location:($('#ov-loc').value||'').trim(),
+      functions:($('#ov-fn').value||'').split('\n').map(s=>s.trim()).filter(Boolean),
+      note:$('#ov-note').value||''});
+    close();toast('改','Point updated',p.code+'-'+p.num);if(onSaved)onSaved()};
+  const r=$('#ov-restore');if(r)r.onclick=()=>{if(confirm('Restore '+p.code+'-'+p.num+' to the built-in data?')){restorePoint(p.id);close();toast('復','Default restored',p.code+'-'+p.num);if(onSaved)onSaved()}};
+}
+
 /* ============ DISPATCH ============ */
+
 function openMode(id,preChan){const m=$('#viewMount');m.innerHTML='';go('view');ac();
   if(id==='practice'){startQuiz(m,allItems(),{title:'Mixed Practice',cn:'復習',deck:'Mixed',sessionMode:'mixed',excludeAux:true},'practice');return}
   if(id==='revise'){startQuiz(m,allItems(),{title:'Revise',cn:'復習',deck:'Due',sessionMode:'revise'},'revise');return}
@@ -1503,6 +1675,7 @@ function openMode(id,preChan){const m=$('#viewMount');m.innerHTML='';go('view');
     startQuiz(m,items,{title:'Learn New Points',cn:'新學',deck:'New',sessionMode:'learn',ordered:true},'learn');return}
   if(id==='chars'){renderChars(m);return}
   if(id==='cmap'){renderChannelMap(m);return}
+  if(SESSION_SPECS[id]){startUnified(m,id);return}
   if(id==='cases'){renderCases(m);return}
   if(id==='tutor'){renderClinic(m);return}
   if(id==='locate'){renderLocate(m);return}
@@ -1556,7 +1729,7 @@ function openSettings(){const m=$('#viewMount');m.innerHTML='';go('view');ac();
         <div class="row"><label>Daily goal · cards per day</label><div class="chips">${gC}</div>
           <div style="color:var(--paper-faint);font-size:12.5px;margin-top:7px">Drives the home ring and the daily completion reward. A target you can hit most days beats an ambitious one you skip.</div></div>
         <div class="row"><label>New points per session</label><div class="chips">${cC}</div>
-          <div style="color:var(--paper-faint);font-size:12.5px;margin-top:7px">How many unseen points a Learn session introduces (with all their cards). Lower keeps future reviews from snowballing; raise it to break new ground faster.</div></div>
+          <div style="color:var(--paper-faint);font-size:12.5px;margin-top:7px">How many unseen points a 10-minute session introduces (longer sessions scale up proportionally). Lower keeps future reviews from snowballing; raise it to break new ground faster.</div></div>
         <div class="row"><label>Learn order</label><div class="chips">${oC}</div>
           <div style="color:var(--paper-faint);font-size:12.5px;margin-top:7px">Clinical priority introduces points by tier — Essential first (e.g. LI4, ST36, GB20, the Back-Shu and Mu points), down to Peripheral. Within a tier, command/confluent/Yuan points lead. Extra points sit last; pin any point with ★ in the Atlas.</div></div>
         <div class="row"><label>Sound</label><div class="chips">${sC}</div></div>
@@ -1610,7 +1783,8 @@ function startQuiz(mount,items,opt,kind){
   let later=items.filter(it=>{const s=ST.srs[it.key];return s&&s.due>now()});
   due.sort((a,b)=>((ST.srs[b.key].leech?1:0)-(ST.srs[a.key].leech?1:0))||(itemImp(b)-itemImp(a)));
   let queue;
-  if(sm==='revise'){queue=shuffle(due).sort((a,b)=>((ST.srs[b.key].leech?1:0)-(ST.srs[a.key].leech?1:0))||(itemImp(b)-itemImp(a)))}
+  if(sm==='preset'){queue=items.slice()}
+  else if(sm==='revise'){queue=shuffle(due).sort((a,b)=>((ST.srs[b.key].leech?1:0)-(ST.srs[a.key].leech?1:0))||(itemImp(b)-itemImp(a)))}
   else if(sm==='learn'){queue=opt.ordered?items.filter(it=>!ST.srs[it.key]):shuffle(neu).sort((a,b)=>itemImp(b)-itemImp(a)).slice(0,opt.cap||newcap)}
   else{let np=opt.excludeAux?neu.filter(it=>!isAux(it.key)):neu;np.sort((a,b)=>itemImp(b)-itemImp(a));queue=shuffle(due).concat(np.slice(0,newcap));if(!queue.length)queue=np.slice(0,newcap);if(!queue.length)queue=shuffle(later).slice(0,20)}
   if(opt.cap)queue=queue.slice(0,opt.cap);
@@ -1623,7 +1797,7 @@ function startQuiz(mount,items,opt,kind){
     const tl=$('#toLearn');if(tl)tl.onclick=()=>openMode('learn');return}
   const total=queue.length;let idx=0,flipped=false,correctCount=0,xpEarned=0,maxCombo=0;
   mount.innerHTML=vhead(opt.title,opt.cn)+`
-    <div class="qtop"><span class="qdeck" id="qdeck"></span><span class="combo" id="qcombo"></span><span class="spacer"></span><span class="qcount" id="qcount"></span></div>
+    <div class="qtop"><span class="qdeck" id="qdeck"></span><span class="combo" id="qcombo"></span><span class="spacer"></span><button class="qedit" id="qedit" title="Edit this point">✎</button><span class="qcount" id="qcount"></span></div>
     <div class="qprog"><i id="qbar"></i></div>
     <div class="card" id="qcard"></div>
     <div class="qctrl" id="qctrl"></div>`;
@@ -1632,6 +1806,10 @@ function startQuiz(mount,items,opt,kind){
   function render(){const it=queue[idx];flipped=false;
     $('#qdeck').textContent=it.deck||opt.deck||'';$('#qcount').textContent=(idx+1)+' / '+total;$('#qbar').style.width=(idx/total*100)+'%';setCombo();
     card.className='card';void card.offsetWidth;card.classList.add('card');
+    const ep=itemPoint(it),eb=$('#qedit');
+    if(eb){eb.style.display=ep?'block':'none';
+      eb.onclick=()=>openPointEditor(ep,()=>{queue[idx]=regenItem(queue[idx]);render()})}
+    if(it.kind==='case'){renderInlineCase(it);return}
     if(learnMode&&it.studyHTML){const pid=it.key.split(':')[0];if(!met.has(pid)){
       const t=tierOf(pid),rs=impReasons(pid);
       const badge=`<div class="tierbadge t${t}">${tierLabel(t)}${rs.length?' · '+esc(rs.slice(0,3).join(' · ')):''}</div>`;
@@ -1653,6 +1831,25 @@ function startQuiz(mount,items,opt,kind){
       $('#flip').onclick=()=>{if(flipped)return;flipped=true;card.classList.add('flip');sfx('tick');
         setTimeout(()=>{card.innerHTML=`<div class="tag">answer</div>`+it.answerHTML;if(it.onReveal)try{it.onReveal(card)}catch(e){}},190);showGrades(it)}}
   }
+  function renderInlineCase(it){let step=0,wrong=0;
+    function draw(){const s=it.steps[step];
+      card.innerHTML=`<div class="tag">${esc(it.tagText||'case')}</div>
+        <div class="vignette"><div class="l">Clinical scenario</div><div class="v">${it.vignette}</div></div>
+        <div class="casestep"><div class="q">${s.q}</div></div>`;
+      const box=el('div','choices');
+      s.choices.forEach((c,n)=>{const b=el('button','choice',`<b>${'ABCDEF'[n]}</b>${c.html}`);
+        b.onclick=()=>{Array.from(box.children).forEach(x=>x.disabled=true);
+          s.choices.forEach((cc,j)=>{if(cc.correct)box.children[j].classList.add('correct')});
+          if(!c.correct){b.classList.add('wrong');wrong++}
+          sfx(c.correct?'good':'again');
+          if(s.explain){const e=el('div','explain');e.innerHTML=s.explain;card.appendChild(e)}
+          ctrl.innerHTML=`<div class="actions"><button class="flipbtn" id="cstep">${step<it.steps.length-1?'Next step →':'See the case →'}</button></div>`;
+          $('#cstep').onclick=()=>{step++;if(step<it.steps.length)draw();else done()}};
+        box.appendChild(b)});
+      card.appendChild(box);ctrl.innerHTML='';}
+    function done(){card.innerHTML=`<div class="tag">case review</div><div class="recap">${it.recap}</div>`+reviewDetail(it.review||[]);
+      showGrades(it,wrong===0)}
+    draw()}
   function showGrades(it,mcqCorrect){
     setTimeout(()=>{
       const g=el('div','grades');
@@ -1681,7 +1878,7 @@ function startQuiz(mount,items,opt,kind){
       <div class="stats"><div class="stat"><b>${total}</b><span>cards</span></div><div class="stat"><b>+${xpEarned}</b><span>XP</span></div><div class="stat"><b>×${maxCombo}</b><span>best combo</span></div><div class="stat"><b>${acc}%</b><span>recalled</span></div></div>
       <p style="color:var(--paper-faint)">Streak ${ST.streak} · ${reviseDueCount()} still due to revise.</p>
       <div class="actions" style="margin-top:18px"><button class="btn ghost" id="again">Another round</button><button class="btn primary" onclick="go('home')">Home</button></div></div>`;
-    burst('gold');$('#again').onclick=()=>startQuiz(mount,items,opt,kind)}
+    burst('gold');$('#again').onclick=()=>{if(opt.preset)startUnified(mount,opt.preset);else startQuiz(mount,items,opt,kind)}}
   render()
 }
 
