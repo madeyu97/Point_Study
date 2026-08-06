@@ -150,3 +150,20 @@ FIX (v23) — Clinical Reasoning showed the wrong worked example
   Bei Shu and Mu correctly show no example (they are not in the naming grid).
   Verified over 1200 generated examples: the example category now always equals
   the answer category.
+
+FIX (v24) — stale day counter and phantom streak
+  The day only rolled over inside touchDay(), which runs when you GRADE a card.
+  So opening the app after a break showed the last study day's figures: a daily
+  count that could read "41 of 30", and a streak that had actually already
+  lapsed. Nothing was corrupted - the numbers corrected themselves the moment
+  you graded anything - but the home screen was lying until then.
+  Now a rollDay() runs whenever the app opens or the home screen renders:
+    - the daily counter resets when the date changes
+    - a streak that has genuinely lapsed settles to 0 immediately
+    - a banked freeze is still only SPENT by actually studying, never by
+      merely opening the app
+  The streak line now states where you stand:
+    studied today      -> "N-day streak - X freezes"
+    studied yesterday  -> "N-day streak - study today to keep it"
+    missed, freeze held-> "N-day streak - a freeze will cover yesterday"
+    lapsed             -> "no streak yet - study today to start one"

@@ -720,6 +720,7 @@ function gainXP(g,isNew){
 
 /* ============ STREAK / GOAL ============ */
 function touchDay(){
+  rollDay();
   const t=todayStr();
   if(ST.todayDate!==t){ST.todayDate=t;ST.todayCount=0;ST.celebGoal=null;}
   ST.todayCount++;
@@ -732,6 +733,31 @@ function touchDay(){
     if(ST.streak%7===0)ST.freeze=Math.min((ST.freeze||0)+1,3);
   }
 }
+/* The day must roll over when the app is OPENED, not only when a card is graded —
+   otherwise the home screen keeps showing the last study day's count and a streak
+   that has already lapsed. Non-destructive: a freeze is still only spent by
+   actually studying (in touchDay), never merely by opening the app. */
+function streakState(){
+  if(!ST.lastDay)return{g:null,state:'none'};
+  const g=dayGap(ST.lastDay);
+  if(g<=0)return{g,state:'done'};        // already studied today
+  if(g===1)return{g,state:'pending'};    // studied yesterday — today still open
+  if(g===2&&ST.freeze>0)return{g,state:'frozen'}; // a banked freeze can cover it
+  return{g,state:'lapsed'};
+}
+function streakLine(){const s=streakState();
+  const base=`🔥 ${ST.streak}-day streak`;
+  if(s.state==='done')return `${base} · ❄ ${ST.freeze} freeze${ST.freeze===1?'':'s'}`;
+  if(s.state==='pending')return `${base} · <span style="color:var(--gold)">study today to keep it</span>`;
+  if(s.state==='frozen')return `${base} · <span style="color:var(--gold)">❄ a freeze will cover yesterday</span>`;
+  if(s.state==='lapsed'||s.state==='none')return `<span style="color:var(--paper-faint)">no streak yet — study today to start one</span>`;
+  return base}
+function rollDay(){
+  const t=todayStr();let changed=false;
+  if(ST.todayDate!==t){ST.todayDate=t;ST.todayCount=0;ST.celebGoal=null;changed=true}
+  if(streakState().state==='lapsed'&&ST.streak!==0){ST.streak=0;changed=true}
+  if(changed){store.set(KEY,JSON.stringify(ST));schedulePush()}
+  return changed}
 
 /* ============ ACHIEVEMENTS ============ */
 /* ============ HONOURS — five stages, several sections inside each ============ */
@@ -874,7 +900,7 @@ const MODES=[
 ];
 
 /* ============ HOME ============ */
-function renderHome(){
+function renderHome(){rollDay();
   syncHeader();
   if(pendingLevel){const L=pendingLevel;pendingLevel=null;showLevelUp(L)}
   checkAch();save();
@@ -893,7 +919,7 @@ function renderHome(){
   const goalc=el('div','panel goalcard');
   goalc.innerHTML=`<div class="ring">${ringSVG(goalPct,88,'var(--gold)')}<div class="num"><b>${ST.todayCount}</b><small>of ${ST.dailyGoal}</small></div></div>
     <div class="info"><div class="l">Today's Goal</div><div class="v"><b>${due}</b> cards due now</div>
-    <div class="v" style="margin-top:6px;color:var(--paper-faint);font-size:13px">🔥 ${ST.streak}-day streak · ❄ ${ST.freeze} freeze</div></div>`;
+    <div class="v" style="margin-top:6px;color:var(--paper-faint);font-size:13px">${streakLine()}</div></div>`;
   board.append(rankc,goalc);h.appendChild(board);
   // CTA — explicit Revise vs Learn tracks
   // ===== Today's Session — three choices, one pool =====
