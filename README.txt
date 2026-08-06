@@ -112,3 +112,41 @@ UNIFIED SESSIONS + IN-SESSION EDITING (v20)
   showed the position AND the options showed the number, so it could be solved
   by arithmetic. Options now show pinyin (and English); the answer still teaches
   the code.
+
+FIX (v21) — multi-select cases inside a session
+  "Build a Rx" cases (select the Shu-Stream point on each of 3 channels, or the
+  two points of a Dui Yao pair) were being resolved by a single tap when they
+  appeared inside Balanced/Clinical sessions: the first tap disabled every
+  option and revealed the rest. The session runner only had the single-answer
+  path; the multi-select path existed solely in the standalone Cases mode.
+  Now: tap to select up to N, a counter shows "Select 3, then check - 1/3",
+  Check stays disabled until N are chosen, and on check the answer marks
+  correct / wrong / missed. Applies to every multi-select card regardless of
+  category (Shu Stream, He Sea, Yuan Source, Dui Yao pairs, and the rest).
+
+DATA FIX (v22) — command roles on the wrong point (tone-collision)
+  Two command roles had been attached to the wrong point because the original
+  import matched by tone-stripped pinyin without checking the channel:
+    Shu Stream : was on KI-15 Zhongzhu 中注  -> corrected to SJ-3 Zhongzhu 中渚
+    Xi Cleft   : was on GB-32 Zhongdu 中瀆   -> corrected to LR-6 Zhongdu 中都
+  KI-15 and GB-32 carry no command role and now show none.
+  A full audit re-derived all 111 command-point assignments by matching BOTH
+  channel and pinyin (with aliases for "Gall Bladder", and treating Confluent /
+  Lower He Sea / vessel Xi-Cleft rows as naming the vessel treated rather than
+  the point's own channel). Every other assignment verified correct; these four
+  points were the only errors. Envoy, Dui Yao and contraindication data are
+  keyed by point code, so they were never affected.
+
+FIX (v23) — Clinical Reasoning showed the wrong worked example
+  The "for example" line under the answer was matched to the answer by FIRST
+  WORD only, so "Jing River" also matched "Jing Well" (and vice versa) and half
+  the time illustrated the wrong category entirely. Now matched on the exact
+  canonical category via an explicit map, so the example always demonstrates the
+  category that was actually the answer.
+  Also: the "on Yin" variants (Shu Stream on Yin, Xi on Yin) now draw their
+  example from a Yin channel only, and add the teaching note - that on Yin
+  channels the Shu-Stream is also the Yuan-Source, and that Yin-channel
+  Xi-Clefts are used for blood disorders and bleeding.
+  Bei Shu and Mu correctly show no example (they are not in the naming grid).
+  Verified over 1200 generated examples: the example category now always equals
+  the answer category.
