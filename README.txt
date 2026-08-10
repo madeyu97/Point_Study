@@ -167,3 +167,50 @@ FIX (v24) — stale day counter and phantom streak
     studied yesterday  -> "N-day streak - study today to keep it"
     missed, freeze held-> "N-day streak - a freeze will cover yesterday"
     lapsed             -> "no streak yet - study today to start one"
+
+ARCHIVE A CARD (v25)
+  During any session, the ⊘ button in the header archives the card you are
+  looking at. It is removed from the session immediately and never appears
+  again - in any mode, count, or generated session - until restored.
+  Settings -> Archived cards lists them with readable labels
+  ("Location · Hegu LI-4") and restores them one at a time or all at once.
+  The card's review history is deliberately KEPT while archived, so restoring
+  resumes its schedule rather than starting it from scratch.
+  Archives ride along in Backup export/import.
+
+COLLEAGUES 同道 (v26) — usernames, connections, shared progress, rivals
+  SETUP: run social-schema.sql in Supabase (SQL Editor) once, alongside the
+  existing progress table. Requires sync to be configured and signed in.
+  - Username: claimed on first visit to Colleagues. 3-20 chars, lowercase
+    letters/numbers/underscore. Others add you by USERNAME, never by email.
+  - Connections are mutual: a request is pending until the other person
+    accepts. Nothing is shared before that, and removing a connection stops
+    sharing both ways at once.
+  - Shared summary only: streak, level, mature points, honours, reviews this
+    week. NEVER your notes, edits, archived cards, which cards you find hard,
+    or your email. Enforced by row-level security on the server, not just in
+    the app.
+  - Star (☆/★) a colleague to make them a "rival": they appear in a strip at
+    the top of your home screen with your own row for comparison, refreshed
+    when you open the app and cached so it still shows offline. Starring is
+    entirely local - nobody is told you starred them.
+  - No free-text messaging, by design.
+
+SESSIONS REWORKED + STUDY MATERIAL TOGGLES (v27)
+  DAILY GOAL 日課 (new, and now the primary session): takes EVERY due card
+    first, then tops up with new cards until your daily goal is reached.
+    If more is due than the goal, you get all of it - due work is never
+    truncated. Cards already done today count toward the goal.
+  TIMED SPRINT 限時 (new, replaces the minutes slider): choose 5/10/15/20/30
+    minutes on the home screen; the session runs until the clock expires and
+    then reports how far you got. A small muted countdown sits in the session
+    header and turns cinnabar in the final minute.
+  REMOVED: the session-length slider. It estimated 5 cards per minute, which
+    was simply wrong, so the numbers it promised were meaningless.
+  STUDY MATERIAL 學材 (Settings): a collapsible section of toggles -
+    13 card types, 15 channels, 5 clinical-priority tiers, each with
+    all-on/all-off. Channel and tier scope apply everywhere (they define what
+    material is in play); card-type toggles apply to the automatic sessions,
+    so opening a specific drill from the library still works. The section
+    header summarises what is switched off at a glance. Filters ride along in
+    backups.

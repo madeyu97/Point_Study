@@ -358,11 +358,30 @@ table.matrix td.rev .py{display:block;font-family:var(--disp);font-style:italic;
 .choice.sel{border-color:var(--gold2);background:rgba(216,175,82,.12);color:var(--paper)}
 .choice.missed{border-color:var(--jade);background:rgba(143,181,151,.10)}
 .hint{text-align:center;color:var(--paper-faint);font-size:12.5px;font-family:var(--disp);letter-spacing:1px;margin-bottom:9px}
-.durbox{background:var(--ink2);border:1px solid var(--line);border-radius:14px;padding:13px 16px 9px;margin:2px 0 13px}
-.durtop{display:flex;align-items:baseline;justify-content:space-between;font-family:var(--disp);font-size:12.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--paper-faint)}
-.durtop b{font-size:17px;letter-spacing:.5px;text-transform:none;color:var(--gold)}
-.durbox input[type=range]{width:100%;margin:9px 0 2px;accent-color:var(--seal);background:transparent}
-.durticks{display:flex;justify-content:space-between;font-family:var(--disp);font-size:10.5px;color:var(--line3)}
+.acc{border:1px solid var(--line);border-radius:14px;background:var(--ink2);margin-bottom:13px;overflow:hidden}
+.acchead{width:100%;display:flex;align-items:center;gap:10px;background:none;border:none;padding:14px 16px;cursor:pointer;font-family:var(--disp);font-size:15.5px;color:var(--paper);text-align:left}
+.acchead span:first-child{font-weight:600;letter-spacing:.5px}
+.accn{margin-left:auto;font-size:12px;color:var(--paper-faint);letter-spacing:.5px}
+.accchev{color:var(--gold);font-size:12px;transition:.2s}
+.acc.open .accchev{transform:rotate(180deg)}
+.accbody{display:none;padding:0 16px 16px}
+.acc.open .accbody{display:block}
+.tglwrap{display:flex;flex-direction:column;gap:7px;margin-bottom:10px}
+.tgl{display:flex;align-items:center;gap:11px;background:none;border:1px solid var(--line);border-radius:11px;padding:9px 12px;cursor:pointer;text-align:left;width:100%;color:var(--paper-dim);transition:.15s}
+.tgl.on{border-color:var(--jade2);color:var(--paper)}
+.tglsw{flex:none;width:34px;height:19px;border-radius:10px;background:var(--line2);position:relative;transition:.18s}
+.tgl.on .tglsw{background:var(--jade)}
+.tglsw::after{content:"";position:absolute;top:2px;left:2px;width:15px;height:15px;border-radius:50%;background:var(--paper);transition:.18s}
+.tgl.on .tglsw::after{left:17px}
+.tgln{font-family:var(--disp);font-size:14.5px;line-height:1.25}
+.tgln em{display:block;font-style:normal;font-family:var(--sans);font-size:11.5px;color:var(--paper-faint);margin-top:2px}
+.accbtns{display:flex;gap:8px;margin-bottom:6px}
+.accbtns .btn{font-size:12.5px;padding:5px 14px}
+.sprintchips{display:flex;gap:7px;justify-content:flex-end;margin:-4px 2px 0}
+.spchip{background:none;border:1px solid var(--line2);color:var(--paper-faint);font-family:var(--disp);font-size:12px;padding:4px 11px;border-radius:12px;cursor:pointer;transition:.15s}
+.spchip.on{border-color:var(--gold2);color:var(--gold);background:rgba(216,175,82,.10)}
+.qclock{font-family:var(--disp);font-size:12.5px;color:var(--paper-faint);letter-spacing:1px;margin-right:10px;opacity:.75}
+.qclock.low{color:var(--seal);opacity:1}
 .sublinks{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:13px 0 2px}
 .sublinks button{background:none;border:none;color:var(--paper-faint);font-family:var(--disp);font-size:13.5px;letter-spacing:.5px;cursor:pointer;padding:8px 10px;transition:.15s}
 .sublinks button:hover{color:var(--gold)}
@@ -374,6 +393,23 @@ table.matrix td.rev .py{display:block;font-family:var(--disp);font-style:italic;
 .ovlhead b{font-style:italic;color:var(--gold)}
 .ovlhead span{font-size:12px;color:var(--seal);letter-spacing:1px}
 .ovlx{margin-left:auto;background:none;border:none;color:var(--paper-faint);font-size:19px;cursor:pointer}
+.archrow{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+.archrow:last-child{border-bottom:none}
+.archrow span{flex:1;font-size:13.5px;color:var(--paper2);min-width:0}
+.archrow .btn{font-size:13px;padding:5px 14px}
+.rivals{background:var(--ink2);border:1px solid var(--line);border-radius:14px;padding:11px 14px;margin:2px 0 13px}
+.rhead{display:flex;align-items:baseline;justify-content:space-between;font-family:var(--disp);font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--paper-faint);margin-bottom:7px}
+.rhead span{letter-spacing:1px;font-size:10.5px;color:var(--line3)}
+.rrow{display:flex;align-items:center;gap:10px;padding:5px 0;font-size:13.5px;color:var(--paper2)}
+.rrow.me{color:var(--gold);border-bottom:1px solid var(--line);padding-bottom:7px;margin-bottom:2px}
+.rrow .rn{flex:1;font-family:var(--disp);font-size:15px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rrow .rs{font-family:var(--disp);font-size:12.5px;color:var(--paper-faint);min-width:52px;text-align:right}
+.rrow.me .rs{color:var(--gold2)}
+.frow{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.frow:last-child{border-bottom:none}
+.frow .fn{flex:1;font-family:var(--disp);font-size:16px;color:var(--paper);min-width:0}
+.frow .fs{font-family:var(--sans);font-size:12px;color:var(--paper-faint);margin-top:3px;letter-spacing:.2px}
+.frow .btn{font-size:12.5px;padding:5px 12px}
 .echip{font-family:var(--disp);font-size:10.5px;letter-spacing:1px;text-transform:uppercase;font-weight:600;padding:2px 8px;border-radius:10px;border:1px solid var(--gold2);color:var(--gold)}
 .editpanel{margin-top:12px;padding-top:12px;border-top:1px dashed var(--line2)}
 .erow{margin-bottom:10px}
@@ -514,8 +550,65 @@ function savePointEdit(pid,fields){ST.edits=ST.edits||{};
   if(Object.keys(e).length)ST.edits[pid]=e;else delete ST.edits[pid];
   applyEdits();save();return true}
 function restorePoint(pid){if(ST.edits)delete ST.edits[pid];applyEdits();save()}
+
+/* ============ ARCHIVE (hide a card for good, reversibly) ============ */
+/* Archived keys are filtered out of every pool and every count. Their SRS
+   record is deliberately KEPT, so restoring a card resumes its schedule
+   rather than starting it over. */
+function isArchived(k){return !!(ST.archived&&ST.archived[k])}
+function archivedCount(){return Object.keys(ST.archived||{}).length}
+function archiveCard(k,label){if(!k)return;ST.archived=ST.archived||{};
+  ST.archived[k]={at:now(),label:label||k};save()}
+function unarchiveCard(k){if(ST.archived)delete ST.archived[k];save()}
+/* ============ CONTENT FILTERS (what's relevant right now) ============ */
+/* Empty object = everything on. Only exclusions are stored, so a fresh
+   install and an old backup both behave as "study it all". */
+const FAMILIES=[
+  {id:'point', n:'Point cards',        d:'Name, location, function — the core four directions'},
+  {id:'location',n:'Channel order',    d:'Which point comes next along a channel'},
+  {id:'map',   n:'Channel map',        d:'Identify a point from its position on the channel'},
+  {id:'cats',  n:'Categories',         d:'The command-point system, all directions'},
+  {id:'region',n:'Region resonance',   d:'Which regions a point commands'},
+  {id:'diff',  n:'Differentiate',      d:'Tell apart look-alike and neighbouring points'},
+  {id:'matrix',n:'Command matrix',     d:'Category × channel grid recall'},
+  {id:'clin',  n:'Clinical reasoning', d:'Indication → point category'},
+  {id:'envoy', n:'Envoys & confluents',d:'Command, confluent, Mu and influential points'},
+  {id:'dui',   n:'Dui Yao pairs',      d:'Classic point pairings'},
+  {id:'safe',  n:'Cautions & safety',  d:'Contraindications and needling cautions'},
+  {id:'case',  n:'Clinical cases',     d:'Multi-step reasoning exercises'},
+  {id:'chars', n:'Characters',         d:'Hanzi meaning, radicals and stroke order'}
+];
+function famOn(f){return !(ST.filters&&ST.filters.fam&&ST.filters.fam[f]===0)}
+function chanOn(c){return !(ST.filters&&ST.filters.chan&&ST.filters.chan[c]===0)}
+function tierOn(t){return !(ST.filters&&ST.filters.tier&&ST.filters.tier[t]===0)}
+function anyFilterActive(){const f=ST.filters||{};
+  return Object.values(f.fam||{}).some(v=>v===0)||Object.values(f.chan||{}).some(v=>v===0)||Object.values(f.tier||{}).some(v=>v===0)}
+/* Channel and tier scope apply everywhere — they define what material is in
+   play. Card-type toggles apply to the automatic sessions only, so opening a
+   specific drill from the library still works even if it's off by default. */
+function inScope(k){
+  const p=itemPoint({key:k});
+  if(!p)return true;                       // not point-specific (Dui Yao, safety…)
+  return chanOn(p.channel)&&tierOn(tierOf(p.id));
+}
+function keepCard(it){return it&&it.key&&!isArchived(it.key)&&inScope(it.key)}
+function liveItems(arr){return arr.filter(keepCard)}
+function sessionItems(arr){return arr.filter(it=>famOn(itemFamily(it.key)))}
+/* A readable label so the archive list isn't a wall of raw keys. */
+function cardLabel(it){
+  const k=it.key,p=itemPoint(it);
+  const what=k.indexOf('diff:')===0?'Differentiate':k.indexOf('cat:')===0?'Category':k.indexOf('rg:')===0?'Resonance'
+    :k.indexOf('cn:')===0?'Command matrix':k.indexOf('clin:')===0?'Clinical reasoning':k.indexOf('envoy:')===0?'Envoy'
+    :k.indexOf('dui:')===0?'Dui Yao':k.indexOf('safe:')===0?'Caution':k.indexOf('hz:')===0?'Character'
+    :k.indexOf('case:')===0?'Clinical case':k.endsWith(':map')?'Channel map':k.endsWith(':next')?'Channel order'
+    :k.endsWith(':loc')?'Location':k.endsWith(':func')?'Function':k.endsWith(':name2fn')?'Point → function'
+    :k.endsWith(':name2loc')?'Point → location':'Card';
+  if(p)return what+' · '+p.pinyin+' '+p.code+'-'+p.num;
+  if(k.indexOf('hz:')===0)return what+' · '+k.slice(3);
+  return what;
+}
 applyEdits();
-function fresh(){return{srs:{},xp:0,streak:0,freeze:1,lastDay:null,reviews:0,dailyGoal:30,newCap:12,sessionMins:10,learnOrder:'priority',pins:{},edits:{},todayDate:null,todayCount:0,ach:{},celebGoal:null,soundOn:true,seenIntro:false}}
+function fresh(){return{srs:{},xp:0,streak:0,freeze:1,lastDay:null,reviews:0,dailyGoal:30,newCap:12,sprintMins:10,learnOrder:'priority',pins:{},edits:{},archived:{},hist:{},rivals:{},filters:{fam:{},chan:{},tier:{}},todayDate:null,todayCount:0,ach:{},celebGoal:null,soundOn:true,seenIntro:false}}
 function load(){try{const s=JSON.parse(store.get(KEY));return s&&s.srs?Object.assign(fresh(),s):fresh()}catch(e){return fresh()}}
 function save(){store.set(KEY,JSON.stringify(ST));schedulePush()}
 
@@ -605,6 +698,7 @@ async function doSync(kind){
     if(kind!=='push'){ const remote=await cloudPull();
       if(remote){ ST=mergeStates(ST,remote); store.set(KEY,JSON.stringify(ST)); } }
     await cloudPush(ST);
+    try{ if(MYPROFILE||await loadProfile()) await pushStats(); }catch(e){}
     syncMsg('Synced · '+new Date().toLocaleTimeString());
     if(kind!=='push'){ syncHeader&&syncHeader(); if(view==='home')renderHome(); }
   }catch(e){ syncMsg('Sync error: '+e.message); }
@@ -613,9 +707,180 @@ async function doSync(kind){
 function syncMsg(m){ lastSyncMsg=m; const el=document.getElementById('syncStat'); if(el)el.textContent=m; }
 
 /* launch: pull+merge once, then keep pushing on saves */
-if(SYNC_ON&&signedIn()){ addEventListener('load',()=>{ setTimeout(()=>doSync('pull'),600); }); }
+if(SYNC_ON&&signedIn()){ addEventListener('load',()=>{ setTimeout(()=>{doSync('pull');refreshRivals()},600); }); }
 addEventListener('online',()=>{ if(SYNC_ON&&signedIn())doSync('push'); });
 try{ if(navigator.storage&&navigator.storage.persist)navigator.storage.persist(); }catch(e){}
+
+/* ============ SOCIAL — usernames, connections, shared progress, rivals ============ */
+/* Privacy model, deliberately conservative:
+   - Nothing is shared until BOTH people accept a connection.
+   - Only a small summary is ever published (streak, level, mature points,
+     honours, 7-day reviews) — never which cards you find hard, never your
+     notes or edits, never your email.
+   - Disconnecting stops sharing immediately, in both directions.
+   - Starring ("rival") is a purely LOCAL preference: nobody is told you
+     starred them, and it only decides who appears on your home screen.
+   - There is no free-text messaging by design. */
+let MYPROFILE=null;          // {user_id, username}
+let CONNS=[];                // [{id,other_id,other_username,status,direction}]
+let RIVALSTATS=[];           // cached summaries for starred connections
+const RIVALK='jingxue_rivalcache';
+
+function publicStats(){
+  const mature=DB.points.filter(p=>['loc','func','name2fn','name2loc']
+    .map(d=>maturity(p.id+':'+d)).filter(x=>x==='mature').length>=2).length;
+  let w=0;const cut=ymd(-6);
+  Object.keys(ST.hist||{}).forEach(d=>{if(d>=cut)w+=ST.hist[d]});
+  return{streak:ST.streak||0,level:levelInfo(ST.xp).level,xp:ST.xp||0,
+    mature,honours:Object.keys(ST.ach||{}).length,week:w,
+    last_day:ST.lastDay||null,updated_at:new Date().toISOString()};
+}
+const USERNAME_RE=/^[a-z0-9_]{3,20}$/;
+function normUser(u){return String(u||'').trim().toLowerCase()}
+
+async function loadProfile(){
+  const rows=await sb('/rest/v1/profiles?select=user_id,username&user_id=eq.'+AUTH.uid,{method:'GET'});
+  MYPROFILE=(rows&&rows[0])||null;return MYPROFILE}
+async function claimUsername(u){
+  const un=normUser(u);
+  if(!USERNAME_RE.test(un))throw new Error('3–20 characters: lowercase letters, numbers and underscore only.');
+  await sb('/rest/v1/profiles?on_conflict=user_id',{method:'POST',
+    headers:{'Prefer':'resolution=merge-duplicates,return=minimal'},
+    body:JSON.stringify({user_id:AUTH.uid,username:un})});
+  MYPROFILE={user_id:AUTH.uid,username:un};return MYPROFILE}
+async function findUser(u){
+  const un=normUser(u);
+  const rows=await sb('/rest/v1/profiles?select=user_id,username&username=eq.'+encodeURIComponent(un),{method:'GET'});
+  return (rows&&rows[0])||null}
+async function loadConnections(){
+  const rows=await sb('/rest/v1/connections?select=id,requester,addressee,status&or=(requester.eq.'+AUTH.uid+',addressee.eq.'+AUTH.uid+')',{method:'GET'});
+  const ids=[...new Set(rows.map(r=>r.requester===AUTH.uid?r.addressee:r.requester))];
+  let names={};
+  if(ids.length){
+    const ps=await sb('/rest/v1/profiles?select=user_id,username&user_id=in.('+ids.join(',')+')',{method:'GET'});
+    ps.forEach(p=>names[p.user_id]=p.username);
+  }
+  CONNS=rows.map(r=>{const other=r.requester===AUTH.uid?r.addressee:r.requester;
+    return{id:r.id,other_id:other,other_username:names[other]||'(unknown)',status:r.status,
+      direction:r.requester===AUTH.uid?'out':'in'}});
+  return CONNS}
+async function requestConnection(username){
+  const p=await findUser(username);
+  if(!p)throw new Error('No one is using that username.');
+  if(p.user_id===AUTH.uid)throw new Error('That is you.');
+  if(CONNS.some(c=>c.other_id===p.user_id))throw new Error('You already have a request or connection with '+p.username+'.');
+  await sb('/rest/v1/connections',{method:'POST',headers:{'Prefer':'return=minimal'},
+    body:JSON.stringify({requester:AUTH.uid,addressee:p.user_id,status:'pending'})});
+  return p}
+async function respondConnection(id,accept){
+  if(accept)await sb('/rest/v1/connections?id=eq.'+id,{method:'PATCH',headers:{'Prefer':'return=minimal'},body:JSON.stringify({status:'accepted'})});
+  else await sb('/rest/v1/connections?id=eq.'+id,{method:'DELETE',headers:{'Prefer':'return=minimal'}});}
+async function removeConnection(id,otherId){
+  await sb('/rest/v1/connections?id=eq.'+id,{method:'DELETE',headers:{'Prefer':'return=minimal'}});
+  if(otherId&&ST.rivals)delete ST.rivals[otherId];save();}
+async function pushStats(){
+  const row=Object.assign({user_id:AUTH.uid},publicStats());
+  await sb('/rest/v1/stats?on_conflict=user_id',{method:'POST',
+    headers:{'Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(row)});}
+async function fetchStats(ids){
+  if(!ids||!ids.length)return[];
+  return await sb('/rest/v1/stats?select=user_id,streak,level,xp,mature,honours,week,last_day&user_id=in.('+ids.join(',')+')',{method:'GET'});}
+
+/* rivals: starred connections shown on the home screen */
+function isRival(id){return !!(ST.rivals&&ST.rivals[id])}
+function toggleRival(id){ST.rivals=ST.rivals||{};if(ST.rivals[id])delete ST.rivals[id];else ST.rivals[id]=1;save()}
+function cachedRivals(){try{return JSON.parse(store.get(RIVALK))||[]}catch(e){return[]}}
+async function refreshRivals(){
+  if(!SYNC_ON||!signedIn()||navigator.onLine===false)return;
+  try{
+    if(!CONNS.length)await loadConnections();
+    const ids=CONNS.filter(c=>c.status==='accepted'&&isRival(c.other_id)).map(c=>c.other_id);
+    if(!ids.length){RIVALSTATS=[];store.set(RIVALK,'[]');return}
+    const rows=await fetchStats(ids);
+    RIVALSTATS=rows.map(r=>{const c=CONNS.find(x=>x.other_id===r.user_id);
+      return Object.assign({},r,{username:c?c.other_username:'?'})})
+      .sort((a,b)=>b.week-a.week);
+    store.set(RIVALK,JSON.stringify(RIVALSTATS));
+    if(view==='home')renderHome();
+  }catch(e){/* offline or not yet set up — the cached strip still shows */}
+}
+function rivalStrip(){
+  const list=RIVALSTATS.length?RIVALSTATS:cachedRivals();
+  if(!SYNC_ON||!signedIn()||!list.length)return null;
+  const me=publicStats();
+  const box=el('div','rivals');
+  const row=(name,s,mine)=>`<div class="rrow${mine?' me':''}">
+    <span class="rn">${mine?'You':esc(name)}</span>
+    <span class="rs">🔥 ${s.streak}</span>
+    <span class="rs">${s.week} wk</span>
+    <span class="rs">${s.mature} pts</span></div>`;
+  box.innerHTML=`<div class="rhead">Rivals 對手<span>this week</span></div>`
+    +row(null,me,true)+list.map(r=>row(r.username,r,false)).join('');
+  return box}
+
+function renderFriends(mount){
+  if(!SYNC_ON)return mount.innerHTML=vhead('Colleagues','同道')+`<div class="setup"><div style="color:var(--paper-faint);font-size:13.5px">Cloud sync isn't configured in this build, so connections aren't available.</div></div>`;
+  if(!signedIn())return mount.innerHTML=vhead('Colleagues','同道')+`<div class="setup"><div style="color:var(--paper-faint);font-size:13.5px">Sign in first (設 → Account &amp; sync) to connect with colleagues.</div></div>`;
+  mount.innerHTML=vhead('Colleagues','同道')+`<div id="fbody"><div class="tloading"><div class="han">同</div><p>Loading…</p></div></div>`;
+  (async()=>{
+    try{
+      await loadProfile();
+      if(!MYPROFILE)return askUsername();
+      await loadConnections();
+      const accepted=CONNS.filter(c=>c.status==='accepted');
+      const stats=accepted.length?await fetchStats(accepted.map(c=>c.other_id)):[];
+      const byId={};stats.forEach(s=>byId[s.user_id]=s);
+      draw(byId);
+    }catch(e){$('#fbody').innerHTML=`<div class="setup"><div style="color:var(--paper-faint);font-size:13.5px">Couldn't load: ${esc(e.message)}</div></div>`}
+  })();
+  function askUsername(){
+    $('#fbody').innerHTML=`<div class="setup"><div class="row"><label>Choose a username</label>
+      <div style="color:var(--paper-faint);font-size:13.5px;margin-bottom:10px">Colleagues add you by username, never by email. 3–20 characters: lowercase letters, numbers, underscore. This is the only thing others can see about you until you accept a connection.</div>
+      <div class="erow"><input class="search ein" id="unin" placeholder="e.g. matt_kd" autocapitalize="off" autocorrect="off"></div>
+      <div class="actions" style="justify-content:flex-start"><button class="btn primary" id="unsave">Claim it</button></div>
+      <div class="count" id="unmsg" style="margin-top:8px"></div></div></div>`;
+    $('#unsave').onclick=async()=>{
+      try{$('#unmsg').textContent='Claiming…';await claimUsername($('#unin').value);
+        toast('名','Username claimed','Colleagues can now find you.');renderFriends(mount)}
+      catch(e){$('#unmsg').textContent=/duplicate|unique/i.test(e.message)?'That username is taken.':e.message}};
+  }
+  function draw(byId){
+    const inc=CONNS.filter(c=>c.status==='pending'&&c.direction==='in');
+    const out=CONNS.filter(c=>c.status==='pending'&&c.direction==='out');
+    const acc=CONNS.filter(c=>c.status==='accepted');
+    const me=publicStats();
+    $('#fbody').innerHTML=`
+      <div class="setup"><div class="row"><label>You are</label>
+        <div style="font-family:var(--disp);font-size:19px;color:var(--gold)">@${esc(MYPROFILE.username)}</div>
+        <div class="count" style="margin-top:6px">🔥 ${me.streak} · level ${me.level} · ${me.mature} points mature · ${me.week} reviews this week</div></div></div>
+      <div class="setup"><div class="row"><label>Add a colleague</label>
+        <div class="erow"><input class="search ein" id="addin" placeholder="their username" autocapitalize="off" autocorrect="off"></div>
+        <div class="actions" style="justify-content:flex-start"><button class="btn primary" id="addbtn">Send request</button></div>
+        <div class="count" id="addmsg" style="margin-top:8px">They must accept before either of you sees the other's progress.</div></div></div>
+      ${inc.length?`<div class="group-label"><span class="en">Requests</span><span class="cn">請求</span><span class="ln"></span></div>
+        <div class="setup">${inc.map(c=>`<div class="archrow"><span>@${esc(c.other_username)} would like to connect</span>
+          <button class="btn primary" data-acc="${c.id}">Accept</button><button class="btn ghost" data-dec="${c.id}">Decline</button></div>`).join('')}</div>`:''}
+      ${out.length?`<div class="count" style="margin:10px 2px">Waiting on: ${out.map(c=>'@'+esc(c.other_username)).join(', ')}</div>`:''}
+      <div class="group-label"><span class="en">Connected</span><span class="cn">同道</span><span class="ln"></span></div>
+      ${acc.length?`<div class="setup">${acc.map(c=>{const s=byId[c.other_id]||{streak:0,level:1,mature:0,honours:0,week:0};
+        return `<div class="frow">
+          <button class="star${isRival(c.other_id)?' on':''}" data-star="${c.other_id}" title="Show on home screen">${isRival(c.other_id)?'★':'☆'}</button>
+          <div class="fn">@${esc(c.other_username)}<div class="fs">🔥 ${s.streak} · lvl ${s.level} · ${s.mature} pts · ${s.honours} honours · ${s.week} this week</div></div>
+          <button class="btn ghost" data-rm="${c.id}" data-rmo="${c.other_id}">Remove</button></div>`}).join('')}</div>`
+        :`<div class="count" style="margin:2px">No connections yet. Add a colleague by username above.</div>`}
+      <div class="count" style="margin:14px 2px">Only this summary is ever shared — never your notes, edits, or which cards you find hard. Removing a connection stops sharing both ways at once.</div>`;
+    $('#addbtn').onclick=async()=>{
+      try{$('#addmsg').textContent='Sending…';const p=await requestConnection($('#addin').value);
+        $('#addmsg').textContent='Request sent to @'+p.username+'.';renderFriends(mount)}
+      catch(e){$('#addmsg').textContent=e.message}};
+    mount.querySelectorAll('[data-acc]').forEach(b=>b.onclick=async()=>{await respondConnection(b.dataset.acc,true);refreshRivals();renderFriends(mount)});
+    mount.querySelectorAll('[data-dec]').forEach(b=>b.onclick=async()=>{await respondConnection(b.dataset.dec,false);renderFriends(mount)});
+    mount.querySelectorAll('[data-rm]').forEach(b=>b.onclick=async()=>{
+      if(!confirm('Remove this connection? You will both stop seeing each other\u2019s progress.'))return;
+      await removeConnection(b.dataset.rm,b.dataset.rmo);refreshRivals();renderFriends(mount)});
+    mount.querySelectorAll('[data-star]').forEach(b=>b.onclick=()=>{toggleRival(b.dataset.star);refreshRivals();renderFriends(mount)});
+  }
+}
 
 /* ---- Settings panel: Account & sync ---- */
 function renderAccount(mount){
@@ -724,6 +989,8 @@ function touchDay(){
   const t=todayStr();
   if(ST.todayDate!==t){ST.todayDate=t;ST.todayCount=0;ST.celebGoal=null;}
   ST.todayCount++;
+  ST.hist=ST.hist||{};ST.hist[t]=(ST.hist[t]||0)+1;
+  const cut=ymd(-30);Object.keys(ST.hist).forEach(d=>{if(d<cut)delete ST.hist[d]});
   if(ST.lastDay!==t){
     const g=ST.lastDay?dayGap(ST.lastDay):99;
     if(g===1)ST.streak++;
@@ -896,6 +1163,7 @@ const MODES=[
  {id:'dui',gl:'對',cn:'對藥',name:'Dui Yao Pairs',dot:'',desc:'Synergistic combinations — build the prescription from indication to pair.'},
  {id:'safe',gl:'戒',cn:'禁忌',name:'Cautions & Safety',dot:'warm',desc:'Contraindications & needling cautions — arteries, organs, pregnancy, no-moxa.'},
  {id:'chars',gl:'字',cn:'漢字',name:'Characters',dot:'gold',desc:'A side game: meet the characters in the point names — radicals, components, stroke order.'},
+ {id:'friends',gl:'同',cn:'同道',name:'Colleagues',dot:'',desc:'Connect by username and compare progress. Star a colleague to see them on your home screen.'},
  {id:'atlas',gl:'圖',cn:'穴圖',name:'Point Atlas',dot:'',desc:'Searchable reference of all 409 points with full detail. Look anything up.'},
 ];
 
@@ -922,31 +1190,31 @@ function renderHome(){rollDay();
     <div class="v" style="margin-top:6px;color:var(--paper-faint);font-size:13px">${streakLine()}</div></div>`;
   board.append(rankc,goalc);h.appendChild(board);
   // CTA — explicit Revise vs Learn tracks
-  // ===== Today's Session — three choices, one pool =====
+  // ===== Today's Session =====
   h.appendChild(secHead("Today's Session",'今日'));
-  const mins=ST.sessionMins||10;
-  const dur=el('div','durbox');
-  dur.innerHTML=`<div class="durtop"><span>Session length</span><b id="durval">${mins} min</b></div>
-    <input type="range" id="durslide" min="5" max="30" step="5" value="${mins}">
-    <div class="durticks"><span>5</span><span>10</span><span>15</span><span>20</span><span>25</span><span>30</span></div>`;
-  h.appendChild(dur);
   const slist=el('div','sesslist');
-  ['balanced','clinical','reviewonly'].forEach(id=>{const s=SESSION_SPECS[id];
+  const goalLeft=Math.max(0,(ST.dailyGoal||30)-(ST.todayCount||0));
+  ['daily','balanced','clinical','reviewonly','timed'].forEach(id=>{const s=SESSION_SPECS[id];
     const c=el('button','sess'+(s.pri?' primary':''));
-    const st=s.reviewOnly
-      ? (due>0?`<div class="sstat"><b>${due}</b><small>due</small></div>`:`<div class="sstat zero"><b>·</b><small>clear</small></div>`)
-      : `<div class="sstat"><b>~${itemsForMins(mins)}</b><small>items</small></div>`;
+    let st;
+    if(s.daily)      st=goalLeft>0?`<div class="sstat"><b>${goalLeft}</b><small>to go</small></div>`:`<div class="sstat zero"><b>✓</b><small>met</small></div>`;
+    else if(s.reviewOnly) st=due>0?`<div class="sstat"><b>${due}</b><small>due</small></div>`:`<div class="sstat zero"><b>·</b><small>clear</small></div>`;
+    else if(s.timed) st=`<div class="sstat"><b>${ST.sprintMins||10}</b><small>min</small></div>`;
+    else             st=`<div class="sstat zero"><b>▸</b><small>go</small></div>`;
     c.innerHTML=`<div class="sgl">${s.gl}</div><div class="sbody"><div class="stitle">${s.name}<span class="scn">${s.cn}</span></div><div class="swhat">${s.what}</div></div>${st}`;
     c.onclick=()=>{ac();startUnified($('#viewMount'),id);go('view')};
-    slist.appendChild(c)});
+    slist.appendChild(c);
+    if(s.timed){const chips=el('div','sprintchips');
+      chips.innerHTML=[5,10,15,20,30].map(m=>`<button class="spchip${(ST.sprintMins||10)===m?' on':''}" data-min="${m}">${m}m</button>`).join('');
+      chips.querySelectorAll('[data-min]').forEach(b=>b.onclick=ev=>{ev.stopPropagation();
+        ST.sprintMins=+b.dataset.min;save();renderHome()});
+      slist.appendChild(chips)}
+  });
   h.appendChild(slist);
+  const rs=rivalStrip();if(rs)h.appendChild(rs);
   const links=el('div','sublinks');
   links.innerHTML=`<button id="goLearn">Learn new points →</button><button id="goClinic">Full clinic case →</button>`;
   h.appendChild(links);
-  $('#durslide').oninput=e=>{ST.sessionMins=+e.target.value;save();
-    $('#durval').textContent=ST.sessionMins+' min';
-    const n=itemsForMins(ST.sessionMins);
-    h.querySelectorAll('.sess .sstat b').forEach((b,i)=>{if(i<2)b.textContent='~'+n})};
   $('#goLearn').onclick=()=>openMode('learn');
   $('#goClinic').onclick=()=>openMode('tutor');
   const startedP=p=>['loc','func','name2fn','name2loc'].some(d=>ST.srs[p.id+':'+d]);
@@ -967,7 +1235,7 @@ function renderHome(){rollDay();
     ['Locate','定位',['location','cmap','locate','region']],
     ['Reason','辨證',['func','clinic','compare','cats','matrix','envoy']],
     ['Apply','臨證',['cases','tutor','dui']],
-    ['Reference','參考',['atlas','safe']]
+    ['Reference','參考',['atlas','safe','friends']]
   ];
   const byId={};MODES.forEach(m=>byId[m.id]=m);
   const mtoggle=el('button','morebtn');mtoggle.innerHTML=`All ${MODES.length} modes <span class="chev">${modesOpen?'▲':'▾'}</span>`;
@@ -1144,11 +1412,11 @@ function buildFunc(){const pool=DB.points.filter(p=>p.functions.length&&p.pinyin
       answerHTML:`<div class="extra" style="border:none"><div class="l">${p.code}-${p.num}${p.english?' · '+esc(p.english):''}</div><div class="py" style="font-size:26px">${esc(p.pinyin)}</div><div class="loc">${esc(p.location)}</div></div>`}})}
 
 /* all items for mixed practice */
-function allItems(){return [].concat(
+function allItems(){return liveItems([].concat(
   pointItems(DB.points,['loc','func','name2fn','name2loc']),
   locationItems(DB.points).filter(it=>it.key.endsWith(':next')),
   buildMatrix(),buildClinic(),buildEnvoy(),buildDui(),buildSafe(),
-  buildMapItems(CHAN.filter(c=>c!=='Extra')),buildDiffItems(),buildCats(),buildRegion())}
+  buildMapItems(CHAN.filter(c=>c!=='Extra')),buildDiffItems(),buildCats(),buildRegion()))}
 function modeDue(id){let items=[];
   if(id==='matrix')items=buildMatrix();else if(id==='clinic')items=buildClinic();else if(id==='envoy')items=buildEnvoy();
   else if(id==='dui')items=buildDui();else if(id==='safe')items=buildSafe();else if(id==='func')items=buildFunc();
@@ -1158,11 +1426,12 @@ function modeDue(id){let items=[];
   else if(id==='cats')items=buildCats();else if(id==='region')items=buildRegion();
   else if(id==='cases')return caseDue();
   else if(id==='tutor')return clinicDue();
-  else if(id==='locate'){let n=0;DB.points.forEach(p=>{const s=ST.srs[p.id+':loc'];if(s&&s.due<=now())n++});return n}else return 0;
-  let n=0;items.forEach(it=>{const s=ST.srs[it.key];if(s&&s.due<=now())n++});return n}
+  else if(id==='friends')return 0;
+  else if(id==='locate'){let n=0;DB.points.forEach(p=>{if(isArchived(p.id+':loc'))return;const s=ST.srs[p.id+':loc'];if(s&&s.due<=now())n++});return n}else return 0;
+  let n=0;items.forEach(it=>{if(isArchived(it.key))return;const s=ST.srs[it.key];if(s&&s.due<=now())n++});return n}
 
 /* ===== learn vs revise counts (chars excluded from main track) ===== */
-function reviseDueCount(){let n=0;for(const k in ST.srs){if(k.indexOf('hz:')===0||k.indexOf('case:')===0||k.indexOf('clinic:')===0)continue;if(ST.srs[k].due<=now())n++}return n}
+function reviseDueCount(){let n=0;for(const k in ST.srs){if(k.indexOf('hz:')===0||k.indexOf('case:')===0||k.indexOf('clinic:')===0)continue;if(isArchived(k))continue;if(ST.srs[k].due<=now())n++}return n}
 function newPointsCount(){let n=0;DB.points.forEach(p=>{if(!['loc','func','name2fn','name2loc'].some(d=>ST.srs[p.id+':'+d]))n++});return n}
 function newItemsCount(){const pool=allItems();let n=0;pool.forEach(it=>{if(!ST.srs[it.key])n++});return n}
 
@@ -1344,7 +1613,7 @@ function genPat(){const out=[];
   return out}
 
 function buildCases(){return [].concat(genMC(),genOdd(),genBuild(),genJust(),genPat())}
-function caseDue(rtype){const cs=buildCases();let n=0;cs.forEach(c=>{if(rtype&&c.rtype!==rtype)return;const s=ST.srs[c.key];if(s&&s.due<=now())n++});return n}
+function caseDue(rtype){const cs=buildCases();let n=0;cs.forEach(c=>{if(rtype&&c.rtype!==rtype)return;if(isArchived(c.key))return;const s=ST.srs[c.key];if(s&&s.due<=now())n++});return n}
 
 function renderCases(mount){
   const types=[['','All reasoning','醫案'],['mc','Multi-constraint','辨'],['odd','Odd one out','別'],['build','Build a Rx','方'],['just','Justify A vs B','衡'],['pat','Points → pattern','理']];
@@ -1353,7 +1622,7 @@ function renderCases(mount){
   const cont=$('#ctype');types.forEach(t=>{const x=el('div','chip'+(t[0]===sel?' on':''),`${t[2]} ${t[1]}`);x.onclick=()=>{sel=t[0];[...cont.children].forEach(n=>n.classList.remove('on'));x.classList.add('on')};cont.appendChild(x)});
   $('#cbegin').onclick=()=>runSession(sel);
 
-  function runSession(rtype){combo=0;const cases=buildCases().filter(c=>!rtype||c.rtype===rtype);
+  function runSession(rtype){combo=0;const cases=liveItems(buildCases()).filter(c=>!rtype||c.rtype===rtype);
     let due=cases.filter(c=>{const s=ST.srs[c.key];return s&&s.due<=now()});
     let neu=cases.filter(c=>!ST.srs[c.key]);
     let queue=shuffle(due).concat(shuffle(neu).slice(0,ST.newCap||12));
@@ -1432,10 +1701,11 @@ function clinicModelPoints(p){const out=[],seen={};
   for(const raw of p.pts){const pt=resolveCode(raw);if(pt&&!seen[pt.id]){seen[pt.id]=1;out.push({pt,raw})}if(out.length>=4)break}
   return out}
 function uniqByNorm(arr){const s=new Set(),o=[];arr.forEach(t=>{const n=norm(t);if(n&&!s.has(n)){s.add(n);o.push(t)}});return o}
-function clinicDue(){let n=0;PDB.forEach(p=>{const s=ST.srs['clinic:'+p.id];if(s&&s.due<=now())n++});return n}
+function clinicDue(){let n=0;PDB.forEach(p=>{if(isArchived('clinic:'+p.id))return;const s=ST.srs['clinic:'+p.id];if(s&&s.due<=now())n++});return n}
 function buildClinicQueue(){
-  const due=PDB.filter(p=>{const s=ST.srs['clinic:'+p.id];return s&&s.due<=now()});
-  const neu=PDB.filter(p=>!ST.srs['clinic:'+p.id]).sort((a,b)=>(a.tier-b.tier));
+  const live=PDB.filter(p=>!isArchived('clinic:'+p.id));
+  const due=live.filter(p=>{const s=ST.srs['clinic:'+p.id];return s&&s.due<=now()});
+  const neu=live.filter(p=>!ST.srs['clinic:'+p.id]).sort((a,b)=>(a.tier-b.tier));
   return shuffle(due).concat(neu.slice(0,ST.newCap||12))}
 function renderClinic(mount){
   const queue=buildClinicQueue();
@@ -1531,7 +1801,7 @@ function renderClinic(mount){
 
 /* ============ LOCATE — write the location (production recall) ============ */
 function renderLocate(mount){let active='All';
-  function start(){let pts=DB.points.filter(p=>active==='All'||p.channel===active);
+  function start(){let pts=DB.points.filter(p=>(active==='All'||p.channel===active)&&!isArchived(p.id+':loc'));
     let due=pts.filter(p=>{const s=ST.srs[p.id+':loc'];return s&&s.due<=now()});
     let neu=pts.filter(p=>!ST.srs[p.id+':loc']).sort((a,b)=>priorityScore(b.id)-priorityScore(a.id));
     let queue=shuffle(due).concat(neu.slice(0,ST.newCap||12));
@@ -1573,17 +1843,22 @@ function itemFamily(k){
   return 'point';
 }
 const SESSION_SPECS={
-  balanced:{id:'balanced',gl:'均',name:'Balanced Practice',cn:'均習',pri:1,
+  daily:{id:'daily',gl:'課',name:'Daily Goal',cn:'日課',pri:1,daily:true,
+    what:'Everything due, then new cards up to your daily goal',
+    w:{point:30,location:10,map:9,cats:8,region:6,matrix:5,clin:5,envoy:4,dui:4,safe:3,diff:5,chars:4,case:6}},
+  balanced:{id:'balanced',gl:'均',name:'Balanced Practice',cn:'均習',
     what:'A little of everything — names, locations, channels, functions, cases',
     w:{point:30,location:10,map:9,cats:8,region:6,matrix:5,clin:5,envoy:4,dui:4,safe:3,diff:5,chars:4,case:6}},
   clinical:{id:'clinical',gl:'臨',name:'Clinical Focus',cn:'臨習',
     what:'Weighted to reasoning — functions, categories, resonance, cases',
     w:{point:12,location:4,map:4,cats:15,region:12,matrix:9,clin:11,envoy:7,dui:9,safe:5,diff:11,chars:0,case:15}},
   reviewonly:{id:'reviewonly',gl:'復',name:'Review Only',cn:'復習',reviewOnly:true,
-    what:'Only what is due — nothing new introduced'}
+    what:'Only what is due — nothing new introduced'},
+  timed:{id:'timed',gl:'時',name:'Timed Sprint',cn:'限時',timed:true,
+    what:'Set a clock and see how far you get — no fixed card count',
+    w:{point:30,location:10,map:9,cats:8,region:6,matrix:5,clin:5,envoy:4,dui:4,safe:3,diff:5,chars:4,case:4}}
 };
 const ITEM_COST=it=>it.kind==='case'?6:1;
-function itemsForMins(m){return Math.max(6,Math.round((m||10)*5))}
 function unifiedPool(){
   const src=[].concat(
     pointItems(DB.points,['loc','func','name2fn','name2loc']),
@@ -1594,9 +1869,9 @@ function unifiedPool(){
   // several builders legitimately share a key (same fact, different presentation) —
   // keep one at random so a session never shows the same card twice
   const by={};src.forEach(it=>{(by[it.key]=by[it.key]||[]).push(it)});
-  return Object.keys(by).map(k=>by[k].length===1?by[k][0]:sample(by[k],1)[0]);
+  return sessionItems(liveItems(Object.keys(by).map(k=>by[k].length===1?by[k][0]:sample(by[k],1)[0])));
 }
-function caseEntries(){return buildCases().map(c=>Object.assign({},c,{kind:'case',deck:'Case',tagText:c.label||'Clinical case'}))}
+function caseEntries(){if(!famOn('case'))return [];return liveItems(buildCases().map(c=>Object.assign({},c,{kind:'case',deck:'Case',tagText:c.label||'Clinical case'})))}
 function weightedPick(groups,weights,budget){
   const out=[];const w=Object.assign({},weights);let left=budget,guard=0;
   while(left>0&&guard++<4000){
@@ -1613,25 +1888,36 @@ function weightedPick(groups,weights,budget){
 }
 function buildUnifiedQueue(spec,target){
   const pool=unifiedPool();
-  const wantCases=spec.reviewOnly||(spec.w&&spec.w.case>0);
-  const all=wantCases?pool.concat(caseEntries()):pool;
+  const all=(spec.reviewOnly||(spec.w&&spec.w.case>0))?pool.concat(caseEntries()):pool;
   const isDue=it=>{const s=ST.srs[it.key];return s&&s.due<=now()};
   const byUrgency=(a,b)=>((ST.srs[b.key].leech?1:0)-(ST.srs[a.key].leech?1:0))||(itemImp(b)-itemImp(a));
+  const grp=arr=>{const g={};arr.forEach(it=>{const f=itemFamily(it.key);(g[f]=g[f]||[]).push(it)});return g};
+
+  // Daily Goal: EVERY due card first, then new cards until the goal is met.
+  if(spec.daily){
+    const due=all.filter(isDue).sort(byUrgency);
+    const left=Math.max(0,(ST.dailyGoal||30)-(ST.todayCount||0)-due.length);
+    let q=due.slice();
+    if(left>0){
+      const newG=grp(shuffle(all.filter(it=>!ST.srs[it.key])));
+      Object.keys(newG).forEach(f=>newG[f].sort((a,b)=>itemImp(b)-itemImp(a)));
+      q=q.concat(weightedPick(newG,spec.w,left));
+    }
+    return shuffle(q);
+  }
   if(spec.reviewOnly){
     const due=all.filter(isDue).sort(byUrgency);
+    if(!target)return shuffle(due);
     const q=[];let left=target;
     for(const it of due){const c=ITEM_COST(it);if(c>left)continue;q.push(it);left-=c}
     return shuffle(q);
   }
-  const grp=arr=>{const g={};arr.forEach(it=>{const f=itemFamily(it.key);(g[f]=g[f]||[]).push(it)});return g};
   const dueG=grp(all.filter(isDue));Object.keys(dueG).forEach(f=>dueG[f].sort(byUrgency));
   const newG=grp(shuffle(all.filter(it=>!ST.srs[it.key])));
   Object.keys(newG).forEach(f=>newG[f].sort((a,b)=>itemImp(b)-itemImp(a)));
-  // newCap is calibrated per 10-minute session; scale it so the length slider means something
   const newBudget=Math.max(2,Math.round((ST.newCap||12)*target/50));
   const picked=weightedPick(dueG,spec.w,Math.max(0,target-newBudget))
         .concat(weightedPick(newG,spec.w,newBudget));
-  // top up with early review so a 30-minute session really is 30 minutes
   let spent=picked.reduce((s,it)=>s+ITEM_COST(it),0);
   if(spent<target){
     const taken=new Set(picked.map(it=>it.key));
@@ -1643,13 +1929,24 @@ function buildUnifiedQueue(spec,target){
 }
 function startUnified(mount,specId){
   const spec=SESSION_SPECS[specId];if(!spec)return;
-  const target=itemsForMins(ST.sessionMins);
-  const queue=buildUnifiedQueue(spec,target);
+  if(spec.timed){
+    const mins=ST.sprintMins||10;
+    // a generous queue; the clock ends the session, not the card count
+    const queue=buildUnifiedQueue(spec,400);
+    startQuiz(mount,queue,{title:spec.name,cn:spec.cn,deck:spec.name,sessionMode:'preset',preset:specId,limitMs:mins*60000},specId);
+    return;
+  }
+  const queue=buildUnifiedQueue(spec,spec.daily?0:60);
+  if(!queue.length){
+    mount.innerHTML=vhead(spec.name,spec.cn)+`<div class="done"><div class="han">畢</div><h2>Nothing waiting</h2><p>${spec.daily?'Your goal is met and nothing is due. Come back later, or pick another session.':'Nothing due in the material you have switched on.'}</p><div class="actions" style="margin-top:16px"><button class="btn primary" onclick="go('home')">Home</button></div></div>`;
+    go('view');return;
+  }
   startQuiz(mount,queue,{title:spec.name,cn:spec.cn,deck:spec.name,sessionMode:'preset',preset:specId},specId);
 }
 
 /* ============ IN-SESSION POINT EDITING ============ */
-/* Which point (if any) is a card actually about — so it can be corrected on the spot. */
+/* Which point (if any) is a card actually about — so it can be corrected on the
+   spot, and so channel/tier scope can be judged. */
 function itemPoint(it){if(!it||!it.key)return null;const k=it.key,s=k.split(':');
   if(ptById[s[0]])return ptById[s[0]];
   if(k.indexOf('cat:role:')===0)return ptById[s[2]]||null;
@@ -1718,6 +2015,7 @@ function openMode(id,preChan){const m=$('#viewMount');m.innerHTML='';go('view');
   if(id==='cases'){renderCases(m);return}
   if(id==='tutor'){renderClinic(m);return}
   if(id==='locate'){renderLocate(m);return}
+  if(id==='friends'){renderFriends(m);return}
   if(id==='flash')setupFlash(m,preChan);
   else if(id==='location')startQuiz(m,locationItems(DB.points),{title:'Location & Channel',cn:'定位',deck:'Location',newcap:14});
   else if(id==='compare')startQuiz(m,buildDiffItems(),{title:'Differentiate',cn:'辨異',deck:'Compare',newcap:14});
@@ -1755,6 +2053,45 @@ function restoreState(text){
   ST=Object.assign(fresh(),state);applyEdits();save();syncHeader();go('home');toast('復','Backup restored','Your progress has been loaded.');return true}
 
 /* ============ SETTINGS ============ */
+function filterSummary(){
+  const f=ST.filters||{};
+  const offF=FAMILIES.filter(x=>!famOn(x.id)).length;
+  const offC=CHAN.filter(c=>!chanOn(c)).length;
+  const offT=[1,2,3,4,5].filter(t=>!tierOn(t)).length;
+  if(!offF&&!offC&&!offT)return 'everything on';
+  const bits=[];
+  if(offF)bits.push(offF+' card type'+(offF===1?'':'s')+' off');
+  if(offC)bits.push(offC+' channel'+(offC===1?'':'s')+' off');
+  if(offT)bits.push(offT+' tier'+(offT===1?'':'s')+' off');
+  return bits.join(' · ')}
+function drawContentFilters(){
+  const box=$('#accbody-content');if(!box)return;
+  const cnt=$('#accn-content');if(cnt)cnt.textContent=filterSummary();
+  const tog=(on,attr,val,label,sub)=>`<button class="tgl${on?' on':''}" ${attr}="${esc(String(val))}">
+    <span class="tglsw"></span><span class="tgln">${esc(label)}${sub?`<em>${esc(sub)}</em>`:''}</span></button>`;
+  box.innerHTML=`
+    <div class="count" style="margin:2px 2px 10px">Switch off anything you're not studying right now. Channels and tiers apply everywhere; card types apply to the sessions above (opening a drill directly still works).</div>
+    <div class="subgrp">Card types <span>${FAMILIES.filter(f=>famOn(f.id)).length}/${FAMILIES.length}</span></div>
+    <div class="tglwrap">${FAMILIES.map(f=>tog(famOn(f.id),'data-fam',f.id,f.n,f.d)).join('')}</div>
+    <div class="accbtns"><button class="btn ghost" data-all="fam">All on</button><button class="btn ghost" data-none="fam">All off</button></div>
+    <div class="subgrp">Channels <span>${CHAN.filter(chanOn).length}/${CHAN.length}</span></div>
+    <div class="tglwrap">${CHAN.map(c=>tog(chanOn(c),'data-chan',c,chHan(c)+' '+c,'')).join('')}</div>
+    <div class="accbtns"><button class="btn ghost" data-all="chan">All on</button><button class="btn ghost" data-none="chan">All off</button></div>
+    <div class="subgrp">Clinical priority <span>${[1,2,3,4,5].filter(tierOn).length}/5</span></div>
+    <div class="tglwrap">${[1,2,3,4,5].map(t=>tog(tierOn(t),'data-tier',t,tierLabel(t),DB.points.filter(p=>tierOf(p.id)===t).length+' points')).join('')}</div>
+    <div class="accbtns"><button class="btn ghost" data-all="tier">All on</button><button class="btn ghost" data-none="tier">All off</button></div>`;
+  const setF=(grp,key,on)=>{ST.filters=ST.filters||{fam:{},chan:{},tier:{}};ST.filters[grp]=ST.filters[grp]||{};
+    if(on)delete ST.filters[grp][key];else ST.filters[grp][key]=0;save()};
+  box.querySelectorAll('[data-fam]').forEach(b=>b.onclick=()=>{setF('fam',b.dataset.fam,!famOn(b.dataset.fam));drawContentFilters()});
+  box.querySelectorAll('[data-chan]').forEach(b=>b.onclick=()=>{setF('chan',b.dataset.chan,!chanOn(b.dataset.chan));drawContentFilters()});
+  box.querySelectorAll('[data-tier]').forEach(b=>b.onclick=()=>{setF('tier',+b.dataset.tier,!tierOn(+b.dataset.tier));drawContentFilters()});
+  box.querySelectorAll('[data-all]').forEach(b=>b.onclick=()=>{const g=b.dataset.all;ST.filters[g]={};save();drawContentFilters()});
+  box.querySelectorAll('[data-none]').forEach(b=>b.onclick=()=>{const g=b.dataset.none;
+    if(g==='fam')FAMILIES.forEach(f=>setF('fam',f.id,false));
+    if(g==='chan')CHAN.forEach(c=>setF('chan',c,false));
+    if(g==='tier')[1,2,3,4,5].forEach(t=>setF('tier',t,false));
+    drawContentFilters()});
+}
 function openSettings(){const m=$('#viewMount');m.innerHTML='';go('view');ac();
   const goals=[15,30,50,75,100],caps=[8,12,16,20,30];
   function draw(){
@@ -1776,6 +2113,12 @@ function openSettings(){const m=$('#viewMount');m.innerHTML='';go('view');ac();
       <div class="setup"><div class="row"><label>Streak protection</label>
         <div style="color:var(--paper2);font-size:14px">🔥 ${ST.streak}-day streak · ❄ ${ST.freeze} freeze${ST.freeze===1?'':'s'} banked. A freeze auto-covers one missed day so the streak survives — you earn one per 7-day run, up to three.</div></div></div>
       <div id="acctMount"></div>
+      <div class="acc" data-acc="content"><button class="acchead"><span>Study material 學材</span><span class="accn" id="accn-content"></span><span class="accchev">▾</span></button>
+        <div class="accbody" id="accbody-content"></div></div>
+      <div class="setup"><div class="row"><label>Archived cards</label>
+        <div style="color:var(--paper2);font-size:13.5px;margin-bottom:${archivedCount()?'10px':'0'}"><b>${archivedCount()}</b> card${archivedCount()===1?'':'s'} hidden from every session${archivedCount()?'':' — archive one with ⊘ during a session'}. Their review history is kept, so restoring resumes where it left off.</div>
+        ${archivedCount()?'<div id="archList"></div><div class="actions" style="justify-content:flex-start;margin-top:8px"><button class="btn ghost" id="unarchAll">Restore all</button></div>':''}
+      </div></div>
       <div class="setup"><div class="row"><label>Customised points</label>
         <div style="color:var(--paper2);font-size:13.5px;margin-bottom:${editedCount()?'11px':'0'}"><b>${editedCount()}</b> point${editedCount()===1?'':'s'} carrying your own edits or notes${editedCount()?'':' — edit any point via ✎ in the Atlas'}. Edits travel with backups.</div>
         ${editedCount()?'<div class="actions" style="justify-content:flex-start"><button class="btn ghost" id="restoreAllEdits">Restore ALL points to defaults</button></div>':''}
@@ -1801,6 +2144,14 @@ function openSettings(){const m=$('#viewMount');m.innerHTML='';go('view');ac();
     m.querySelectorAll('[data-snd]').forEach(x=>x.onclick=()=>{ST.soundOn=x.dataset.snd==='1';save();syncHeader();if(ST.soundOn){ac();sfx('good')}draw()});
     $('#bkExport').onclick=downloadBackup;
     const am=$('#acctMount');if(am){am.innerHTML='';renderAccount(am)}
+    drawContentFilters();
+    m.querySelectorAll('.acchead').forEach(b=>b.onclick=()=>{const a=b.parentElement;a.classList.toggle('open')});
+    const al=$('#archList');
+    if(al){al.innerHTML=Object.keys(ST.archived).sort((a,b)=>ST.archived[b].at-ST.archived[a].at).map(k=>
+      `<div class="archrow"><span>${esc(ST.archived[k].label||k)}</span><button class="btn ghost" data-unarch="${esc(k)}">Restore</button></div>`).join('');
+      al.querySelectorAll('[data-unarch]').forEach(b=>b.onclick=()=>{unarchiveCard(b.dataset.unarch);toast('復','Card restored','It will appear in sessions again.');draw()});}
+    const ua=$('#unarchAll');
+    if(ua)ua.onclick=()=>{if(confirm('Restore all '+archivedCount()+' archived cards?')){ST.archived={};save();toast('復','All cards restored','');draw()}};
     const rae=$('#restoreAllEdits');if(rae)rae.onclick=()=>{if(confirm('Restore ALL '+editedCount()+' customised points to the built-in data? Every edit and note will be removed. This cannot be undone (export a backup first if unsure).')){ST.edits={};applyEdits();save();toast('復','All defaults restored','');draw()}};
     $('#bkCopy').onclick=copyBackup;
     $('#bkImportFile').onclick=()=>$('#bkFile').click();
@@ -1813,7 +2164,7 @@ function openSettings(){const m=$('#viewMount');m.innerHTML='';go('view');ac();
 }
 
 /* ============ QUIZ ENGINE ============ */
-function startQuiz(mount,items,opt,kind){
+function startQuiz(mount,items,opt,kind){items=liveItems(items||[]);
   combo=0;
   const sm=opt.sessionMode||'mixed';
   const newcap=ST.newCap||opt.newcap||12;
@@ -1834,9 +2185,20 @@ function startQuiz(mount,items,opt,kind){
               : 'Nothing due in this deck right now.';
     mount.innerHTML=vhead(opt.title,opt.cn)+`<div class="done"><div class="han">畢</div><h2>${sm==='learn'?'All introduced':'All caught up'}</h2><p>${msg}</p><div class="actions" style="margin-top:16px">${sm==='revise'?'<button class="btn ghost" id="toLearn">Learn new</button>':''}<button class="btn primary" onclick="go('home')">Home</button></div></div>`;
     const tl=$('#toLearn');if(tl)tl.onclick=()=>openMode('learn');return}
-  const total=queue.length;let idx=0,flipped=false,correctCount=0,xpEarned=0,maxCombo=0;
+  let total=queue.length;let idx=0,flipped=false,correctCount=0,xpEarned=0,maxCombo=0;
+  let clockT=null,timeUp=false;
+  const endAt=opt.limitMs?Date.now()+opt.limitMs:0;
+  function stopClock(){if(clockT){clearInterval(clockT);clockT=null}}
+  if(endAt){
+    const cl=$('#qclock');
+    const tick=()=>{const ms=Math.max(0,endAt-Date.now());
+      const m=Math.floor(ms/60000),s=Math.floor(ms%60000/1000);
+      if(cl){cl.textContent=m+':'+String(s).padStart(2,'0');cl.classList.toggle('low',ms<60000)}
+      if(ms<=0&&!timeUp){timeUp=true;stopClock();finish()}};
+    tick();clockT=setInterval(tick,1000);
+  }
   mount.innerHTML=vhead(opt.title,opt.cn)+`
-    <div class="qtop"><span class="qdeck" id="qdeck"></span><span class="combo" id="qcombo"></span><span class="spacer"></span><button class="qedit" id="qedit" title="Edit this point">✎</button><span class="qcount" id="qcount"></span></div>
+    <div class="qtop"><span class="qdeck" id="qdeck"></span><span class="combo" id="qcombo"></span><span class="spacer"></span><span class="qclock" id="qclock"></span><button class="qedit" id="qedit" title="Edit this point">✎</button><button class="qedit" id="qarch" title="Archive this card">⊘</button><span class="qcount" id="qcount"></span></div>
     <div class="qprog"><i id="qbar"></i></div>
     <div class="card" id="qcard"></div>
     <div class="qctrl" id="qctrl"></div>`;
@@ -1848,6 +2210,15 @@ function startQuiz(mount,items,opt,kind){
     const ep=itemPoint(it),eb=$('#qedit');
     if(eb){eb.style.display=ep?'block':'none';
       eb.onclick=()=>openPointEditor(ep,()=>{queue[idx]=regenItem(queue[idx]);render()})}
+    const ab=$('#qarch');
+    if(ab){ab.style.display='block';
+      ab.onclick=()=>{if(!confirm('Archive this card? It will not appear again until you restore it from Settings → Archived cards.'))return;
+        archiveCard(it.key,cardLabel(it));
+        toast('archived'.slice(0,1).toUpperCase(),'Card archived','Restore it any time from Settings.');
+        queue.splice(idx,1);total=queue.length;
+        if(!queue.length){finish();return}
+        if(idx>=queue.length)idx=queue.length-1;
+        render()}}
     if(it.kind==='case'){renderInlineCase(it);return}
     if(learnMode&&it.studyHTML){const pid=it.key.split(':')[0];if(!met.has(pid)){
       const t=tierOf(pid),rs=impReasons(pid);
@@ -1935,7 +2306,7 @@ function startQuiz(mount,items,opt,kind){
     },flipped&&!it.choices?210:0)
   }
   function next(){if(pendingLevel){const L=pendingLevel;pendingLevel=null;showLevelUp(L)}idx++;if(idx>=queue.length){finish();return}render()}
-  function finish(){checkAch();save();syncHeader();$('#qbar').style.width='100%';
+  function finish(){stopClock();checkAch();save();syncHeader();$('#qbar').style.width='100%';
     const acc=total?Math.round(correctCount/total*100):0;
     mount.innerHTML=vhead(opt.title,opt.cn)+`<div class="done"><div class="han">畢</div><h2>Session complete</h2>
       <div class="stats"><div class="stat"><b>${total}</b><span>cards</span></div><div class="stat"><b>+${xpEarned}</b><span>XP</span></div><div class="stat"><b>×${maxCombo}</b><span>best combo</span></div><div class="stat"><b>${acc}%</b><span>recalled</span></div></div>
