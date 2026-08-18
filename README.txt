@@ -214,3 +214,72 @@ SESSIONS REWORKED + STUDY MATERIAL TOGGLES (v27)
     so opening a specific drill from the library still works. The section
     header summarises what is switched off at a glance. Filters ride along in
     backups.
+
+FIX (v28) — Daily Goal now genuinely clears the work
+  A card graded "Again" or "Hard" goes back into learning and falls due again
+  within a minute or ten. The session queue was built once at the start, so
+  those cards were never re-shown - you finished the session with cards still
+  due. (A sweep at the end cannot fix this: a card failed seconds ago is due
+  in 60 seconds, not now.)
+  Now a card graded Again/Hard is re-queued a few cards later and shown again
+  before the session ends, capped at 5 showings so a stubborn card cannot loop
+  forever. Daily Goal and Review Only additionally sweep once more at the end
+  for anything that fell due while you studied (max 4 sweeps). Timed Sprint is
+  never extended by a sweep - the clock ends it.
+  Also fixed: the Daily Goal budget counted a multi-step clinical case as 6
+  cards while the daily counter counted it as 1, so sessions containing cases
+  under-delivered against the goal. The goal is now a straight count of cards.
+
+FIX (v28) — multiple-choice option order
+  Options were shuffled once when the card was built, so a card seen twice had
+  the same layout and the answer could be remembered by position. Options are
+  now reshuffled every single time a card is shown.
+
+SIMPLIFIED (v29)
+  REMOVED Clinic 臨床 (the full mock case) and its embedded 97-pattern dataset.
+    That is 80KB lighter. The Gemini tutor function on Netlify is now unused but
+    harmless. Pattern study lives in the separate Pattern Dojo app.
+    NOTE: Clinical Reasoning 辨證 and Clinical Cases 醫案 are NOT affected -
+    those are point-based drills and remain.
+  REMOVED the Clinical Focus session. Balanced Practice covers mixed work.
+  PROMOTED Learn New Points to a full session card on the home screen - it was
+    buried in a small text link.
+  BALANCED PRACTICE size is now yours: chips for 10/20/30/40 cards under the
+    card, default 20. It previously built a fixed ~50-60 card session.
+  Home screen is now five cards: Daily Goal, Learn New Points, Balanced
+  Practice, Review Only, Timed Sprint - with size/time chips where relevant.
+
+POINTS INCLUDED 選穴 (v30)
+  Settings, directly under Learn order: a per-point picker. Every channel is
+  listed with its point count (e.g. "Lung 11/11"); tap a channel to expand the
+  full list and tick or untick individual points. Each row shows the code,
+  pinyin, English name and clinical tier.
+  - Per channel: All / None buttons.
+  - Overall: "Include all" and "Essential only" (keeps just the 54 tier-1
+    points - useful for exam cramming, and fully reversible).
+  - An unticked point vanishes from every session, every mode and every due
+    count, but its review history is KEPT, so ticking it back resumes the
+    schedule rather than restarting it.
+  - Composes with the existing channel and tier filters, and with archiving.
+  - Exclusions ride along in backups, and the Study material summary reports
+    them ("12 points excluded").
+  Fixed alongside: the header "due" count and per-mode due counts read the
+  schedule directly and ignored scope filters, so excluded/filtered points
+  still inflated the numbers. They now respect scope.
+
+STRUGGLING CARDS 頑固 (v31) — the leech drill
+  A card becomes a "leech" after 4 lapses (4 times you graduated it to review
+  and then hit Again). Previously the flag did almost nothing.
+  NEW SESSION: "Struggling Cards" appears on the home screen ONLY when you have
+  some, showing how many. It shows each card ANSWER-FIRST with its lapse count,
+  then tests it - re-testing a card the same way it keeps failing is what has
+  not been working. The ⊘ archive button is right there if a card is simply bad.
+  Leech cards now carry a 頑 marker in the session header wherever they appear.
+  REHABILITATION (new): hold a leech for a 3-week interval and the flag lifts;
+    its lapse count drops to just under threshold, so one further slip re-flags
+    it. Previously "once a leech, always a leech" - the flag could never clear.
+  FIXED: due cards were sorted leech-first and then RESHUFFLED, which undid the
+    sort completely (leeches landed at positions 37, 14, 26 of 40 in testing).
+    Review Only now genuinely leads with them.
+  Leeches respect archiving and the point/channel/tier filters, and multi-step
+  cases are excluded from the drill (they cannot render answer-first).
