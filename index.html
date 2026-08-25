@@ -676,7 +676,7 @@ async function authRefresh(){
   store.set(AUTHK,JSON.stringify(AUTH));
 }
 function signedIn(){return !!(AUTH&&AUTH.access_token)}
-function signOut(){AUTH=null;store.del(AUTHK);syncMsg('Signed out')}
+function signOut(){AUTH=null;LICENCE=undefined;MYPROFILE=null;CONNS=[];store.del(AUTHK);syncMsg('Signed out')}
 
 /* ---- merge: two states -> one. Per-SRS-key keep the more-studied record;
         counters take the max; edits/pins/settings prefer the newer save. ---- */
@@ -722,6 +722,8 @@ function schedulePush(){ if(!SYNC_ON||!signedIn())return;
   clearTimeout(pushTimer); pushTimer=setTimeout(()=>doSync('push'), 4000); }
 async function doSync(kind){
   if(!SYNC_ON||!signedIn()||syncing||navigator.onLine===false)return;
+  if(LICENCE===undefined)await loadLicence();
+  if(!LICENCE){syncMsg('Licence needed to sync');return}
   syncing=true; syncMsg('Syncing…');
   try{
     if(kind!=='push'){ const remote=await cloudPull();
@@ -736,7 +738,7 @@ async function doSync(kind){
 function syncMsg(m){ lastSyncMsg=m; const el=document.getElementById('syncStat'); if(el)el.textContent=m; }
 
 /* launch: pull+merge once, then keep pushing on saves */
-if(SYNC_ON&&signedIn()){ addEventListener('load',()=>{ setTimeout(()=>{doSync('pull');refreshRivals()},600); }); }
+if(SYNC_ON&&signedIn()){ addEventListener('load',()=>{ setTimeout(async()=>{await loadLicence();doSync('pull');refreshRivals()},600); }); }
 addEventListener('online',()=>{ if(SYNC_ON&&signedIn())doSync('push'); });
 try{ if(navigator.storage&&navigator.storage.persist)navigator.storage.persist(); }catch(e){}
 
@@ -750,6 +752,7 @@ try{ if(navigator.storage&&navigator.storage.persist)navigator.storage.persist()
    - Starring ("rival") is a purely LOCAL preference: nobody is told you
      starred them, and it only decides who appears on your home screen.
    - There is no free-text messaging by design. */
+let LICENCE;                 // undefined = not checked yet, false = none, object = licensed
 let MYPROFILE=null;          // {user_id, username}
 let CONNS=[];                // [{id,other_id,other_username,status,direction}]
 let RIVALSTATS=[];           // cached summaries for starred connections
@@ -767,6 +770,18 @@ function publicStats(){
 const USERNAME_RE=/^[a-z0-9_]{3,20}$/;
 function normUser(u){return String(u||'').trim().toLowerCase()}
 
+async function loadLicence(){
+  try{const rows=await sb('/rest/v1/licences?select=licence_key,activated_at&user_id=eq.'+AUTH.uid,{method:'GET'});
+    LICENCE=(rows&&rows[0])||false}catch(e){LICENCE=false}
+  return LICENCE}
+async function activateLicence(key){
+  const r=await fetch('/.netlify/functions/activate',{method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+AUTH.access_token},
+    body:JSON.stringify({licence:key})});
+  const d=await r.json().catch(()=>({error:'Unreadable response'}));
+  if(!r.ok)throw new Error(d.error||('HTTP '+r.status));
+  await loadLicence();return d}
+function licensed(){return !!LICENCE}
 async function loadProfile(){
   const rows=await sb('/rest/v1/profiles?select=user_id,username&user_id=eq.'+AUTH.uid,{method:'GET'});
   MYPROFILE=(rows&&rows[0])||null;return MYPROFILE}
@@ -853,6 +868,8 @@ function renderFriends(mount){
   mount.innerHTML=vhead('Colleagues','同道')+`<div id="fbody"><div class="tloading"><div class="han">同</div><p>Loading…</p></div></div>`;
   (async()=>{
     try{
+      await loadLicence();
+      if(!licensed())return $('#fbody').innerHTML=`<div class="setup"><div style="color:var(--paper-faint);font-size:13.5px">Colleagues needs an activated licence. Add yours in 設 → Account &amp; sync.</div></div>`;
       await loadProfile();
       if(!MYPROFILE)return askUsername();
       await loadConnections();
@@ -913,11 +930,29 @@ function renderFriends(mount){
 
 /* ---- Settings panel: Account & sync ---- */
 function renderAccount(mount){
+  if(SYNC_ON&&signedIn()&&LICENCE===undefined){loadLicence().then(()=>{mount.innerHTML='';renderAccount(mount)});return}
   const box=el('div','setup');
   if(!SYNC_ON){
     box.innerHTML=`<div class="row"><label>Account &amp; sync</label>
       <div style="color:var(--paper-faint);font-size:13.5px">Cloud sync isn't configured in this build. Your progress is saved on this device only — <b>export a backup regularly</b> so a cleared browser can't wipe it.</div></div>`;
     mount.appendChild(box); return;
+  }
+  if(signedIn()&&!licensed()){
+    box.innerHTML=`<div class="row"><label>Activate your licence</label>
+      <div style="color:var(--paper2);font-size:13.5px;margin-bottom:10px">Signed in as <b>${esc(AUTH.email||'')}</b>. Enter the licence key from your purchase email to switch on cloud backup and colleagues. Studying works without it — this unlocks saving your progress off this device.</div>
+      <div class="erow"><input class="search ein" id="lic-in" placeholder="XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX" autocapitalize="off" autocorrect="off"></div>
+      <div class="actions" style="justify-content:flex-start;gap:9px">
+        <button class="btn primary" id="lic-go">Activate</button>
+        <button class="btn ghost" id="lic-out" style="color:var(--seal)">Sign out</button></div>
+      <div class="count" id="lic-msg" style="margin-top:8px"></div></div>`;
+    mount.appendChild(box);
+    $('#lic-go').onclick=async()=>{const k=($('#lic-in').value||'').trim();
+      if(!k)return $('#lic-msg').textContent='Enter your licence key.';
+      $('#lic-msg').textContent='Checking…';
+      try{await activateLicence(k);toast('證','Licence activated','Cloud backup is on.');doSync('pull');openSettings()}
+      catch(e){$('#lic-msg').textContent=e.message}};
+    $('#lic-out').onclick=()=>{signOut();openSettings()};
+    return;
   }
   if(signedIn()){
     box.innerHTML=`<div class="row"><label>Account &amp; sync</label>
