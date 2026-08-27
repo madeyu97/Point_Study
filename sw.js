@@ -1,4 +1,4 @@
-const CACHE = 'jingxue-v32';
+const CACHE = 'jingxue-v33';
 const ASSETS = [
   './', './index.html', './manifest.webmanifest',
   './icon-192.png', './icon-512.png', './icon-maskable.png', './apple-touch-icon.png'

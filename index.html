@@ -646,8 +646,8 @@ function save(){store.set(KEY,JSON.stringify(ST));schedulePush()}
    the PUBLIC anon values — safe to ship in client code; row-level security,
    not secrecy, protects the data. Leave blank to disable sync entirely
    (app then behaves exactly as the offline-only version). */
-const SUPABASE_URL = 'https://sbaekrboqpfgcdxuzqnu.supabase.co';      // e.g. https://abcdefgh.supabase.co
-const SUPABASE_ANON = 'sb_publishable_STw2NouLZphaCpPZOqnXKQ_SEnfzRRN';     // the long public "anon"/"publishable" key
+const SUPABASE_URL = '';      // e.g. https://abcdefgh.supabase.co
+const SUPABASE_ANON = '';     // the long public "anon"/"publishable" key
 
 const SYNC_ON = !!(SUPABASE_URL && SUPABASE_ANON);
 const AUTHK = 'jingxue_auth';   // stores {access_token, refresh_token, email, uid}
@@ -770,9 +770,17 @@ function publicStats(){
 const USERNAME_RE=/^[a-z0-9_]{3,20}$/;
 function normUser(u){return String(u||'').trim().toLowerCase()}
 
+let LICENCE_ERR='';
 async function loadLicence(){
+  LICENCE_ERR='';
   try{const rows=await sb('/rest/v1/licences?select=licence_key,activated_at&user_id=eq.'+AUTH.uid,{method:'GET'});
-    LICENCE=(rows&&rows[0])||false}catch(e){LICENCE=false}
+    LICENCE=(rows&&rows[0])||false}
+  catch(e){LICENCE=false;
+    // A missing table or a blocked read is NOT the same as "no licence" —
+    // say so, otherwise it looks like the grant simply did not work.
+    LICENCE_ERR=/relation|does not exist|schema/i.test(e.message)
+      ? 'The licences table is missing — run setup-database.sql in Supabase.'
+      : e.message}
   return LICENCE}
 async function activateLicence(key){
   const r=await fetch('/.netlify/functions/activate',{method:'POST',
@@ -869,7 +877,7 @@ function renderFriends(mount){
   (async()=>{
     try{
       await loadLicence();
-      if(!licensed())return $('#fbody').innerHTML=`<div class="setup"><div style="color:var(--paper-faint);font-size:13.5px">Colleagues needs an activated licence. Add yours in 設 → Account &amp; sync.</div></div>`;
+      if(!licensed())return $('#fbody').innerHTML=`<div class="setup"><div style="color:var(--paper-faint);font-size:13.5px">Colleagues needs an activated licence. Add yours in 設 → Account &amp; sync.${LICENCE_ERR?'<br><br><span style="color:var(--seal)">'+esc(LICENCE_ERR)+'</span>':''}</div></div>`;
       await loadProfile();
       if(!MYPROFILE)return askUsername();
       await loadConnections();
@@ -929,8 +937,15 @@ function renderFriends(mount){
 }
 
 /* ---- Settings panel: Account & sync ---- */
+let licenceRechecked=false;   // reset each time Settings opens
 function renderAccount(mount){
-  if(SYNC_ON&&signedIn()&&LICENCE===undefined){loadLicence().then(()=>{mount.innerHTML='';renderAccount(mount)});return}
+  // Re-check once per visit while unlicensed, so a licence granted in Supabase
+  // shows up without reloading the app. The flag stops the redraw re-triggering
+  // the check and looping forever.
+  if(SYNC_ON&&signedIn()&&!licensed()&&!licenceRechecked){
+    licenceRechecked=true;
+    loadLicence().then(()=>{mount.innerHTML='';renderAccount(mount)});
+    if(LICENCE===undefined)return}
   const box=el('div','setup');
   if(!SYNC_ON){
     box.innerHTML=`<div class="row"><label>Account &amp; sync</label>
@@ -943,14 +958,19 @@ function renderAccount(mount){
       <div class="erow"><input class="search ein" id="lic-in" placeholder="XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX" autocapitalize="off" autocorrect="off"></div>
       <div class="actions" style="justify-content:flex-start;gap:9px">
         <button class="btn primary" id="lic-go">Activate</button>
+        <button class="btn ghost" id="lic-recheck">Check again</button>
         <button class="btn ghost" id="lic-out" style="color:var(--seal)">Sign out</button></div>
-      <div class="count" id="lic-msg" style="margin-top:8px"></div></div>`;
+      <div class="count" id="lic-msg" style="margin-top:8px">${LICENCE_ERR?'<span style="color:var(--seal)">'+esc(LICENCE_ERR)+'</span>':'Already granted access? Tap Check again.'}</div></div>`;
     mount.appendChild(box);
     $('#lic-go').onclick=async()=>{const k=($('#lic-in').value||'').trim();
       if(!k)return $('#lic-msg').textContent='Enter your licence key.';
       $('#lic-msg').textContent='Checking…';
       try{await activateLicence(k);toast('證','Licence activated','Cloud backup is on.');doSync('pull');openSettings()}
       catch(e){$('#lic-msg').textContent=e.message}};
+    $('#lic-recheck').onclick=async()=>{$('#lic-msg').textContent='Checking…';
+      LICENCE=undefined;await loadLicence();
+      if(licensed()){toast('證','Licence found','Cloud backup is on.');doSync('pull')}
+      openSettings()};
     $('#lic-out').onclick=()=>{signOut();openSettings()};
     return;
   }
@@ -2115,7 +2135,7 @@ function drawContentFilters(){
     if(g==='tier')[1,2,3,4,5].forEach(t=>setF('tier',t,false));
     drawContentFilters()});
 }
-function openSettings(){const m=$('#viewMount');m.innerHTML='';go('view');ac();
+function openSettings(){licenceRechecked=false;const m=$('#viewMount');m.innerHTML='';go('view');ac();
   const goals=[15,30,50,75,100],caps=[8,12,16,20,30];
   function draw(){
     const gC=goals.map(g=>`<div class="chip${ST.dailyGoal===g?' on':''}" data-goal="${g}">${g}</div>`).join('');
