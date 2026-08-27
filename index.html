@@ -471,6 +471,7 @@ table.matrix td.rev .py{display:block;font-family:var(--disp);font-style:italic;
   <div class="hstat flame" id="hStreak" title="Day streak">🔥<b id="hStreakN">0</b></div>
   <div class="hstat due" id="hDue" title="Cards due"><b id="hDueN">0</b> due</div>
   <button class="iconbtn on" id="sound" title="Sound">♪</button>
+  <button class="iconbtn" id="mates" title="Colleagues">同</button>
   <button class="iconbtn" id="settings" title="Settings">設</button>
 </div></header>
 
@@ -658,9 +659,19 @@ let AUTH = (()=>{ try{return JSON.parse(store.get(AUTHK))||null}catch(e){return 
 let pushTimer=null, syncing=false, lastSyncMsg='';
 
 function authHeaders(){return {'apikey':SUPABASE_ANON,'Authorization':'Bearer '+((AUTH&&AUTH.access_token)||SUPABASE_ANON),'Content-Type':'application/json'}}
-async function sb(path, opts={}){const r=await fetch(SUPABASE_URL+path,{...opts,headers:{...authHeaders(),...(opts.headers||{})}});
+async function sb(path, opts={}, _retried){
+  const r=await fetch(SUPABASE_URL+path,{...opts,headers:{...authHeaders(),...(opts.headers||{})}});
   const txt=await r.text();let body;try{body=txt?JSON.parse(txt):null}catch(e){body=txt}
-  if(!r.ok)throw new Error((body&&(body.error_description||body.msg||body.message||body.error))||('HTTP '+r.status));return body}
+  if(r.ok)return body;
+  const msg=(body&&(body.error_description||body.msg||body.message||body.error))||('HTTP '+r.status);
+  // Supabase access tokens last about an hour. Renew once and retry, rather
+  // than leaving the person stuck on "JWT expired" until they sign out.
+  const stale=(r.status===401||/jwt|expired|invalid token/i.test(String(msg)));
+  if(stale&&!_retried&&AUTH&&AUTH.refresh_token&&path.indexOf('/auth/v1/')!==0){
+    try{await authRefresh();return await sb(path,opts,true)}
+    catch(e){signOut();throw new Error('Your session expired — sign in again.')}
+  }
+  throw new Error(msg)}
 
 /* ---- auth: email one-time code (OTP) ---- */
 async function authSendCode(email){
@@ -1232,6 +1243,7 @@ function go(view){scrollTo(0,0);$('#home').classList.toggle('active',view==='hom
 $('#logo').onclick=()=>go('home');$('#brand').onclick=()=>go('home');
 $('#sound').onclick=()=>{ST.soundOn=!ST.soundOn;save();$('#sound').classList.toggle('on',ST.soundOn);if(ST.soundOn){ac();sfx('good')}};
 $('#settings').onclick=()=>openSettings();
+$('#mates').onclick=()=>{ac();openMode('friends')};
 $('#resetLink').onclick=()=>{if(confirm('Erase all study progress on this device?')){ST=fresh();save();renderHome()}};
 function syncHeader(){$('#hStreakN').textContent=ST.streak||0;$('#hDueN').textContent=reviseDueCount();$('#sound').classList.toggle('on',ST.soundOn)}
 
