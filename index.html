@@ -646,8 +646,8 @@ function save(){store.set(KEY,JSON.stringify(ST));schedulePush()}
    the PUBLIC anon values — safe to ship in client code; row-level security,
    not secrecy, protects the data. Leave blank to disable sync entirely
    (app then behaves exactly as the offline-only version). */
-const SUPABASE_URL = '';      // e.g. https://abcdefgh.supabase.co
-const SUPABASE_ANON = '';     // the long public "anon"/"publishable" key
+const SUPABASE_URL = 'https://sbaekrboqpfgcdxuzqnu.supabase.co';      // e.g. https://abcdefgh.supabase.co
+const SUPABASE_ANON = 'sb_publishable_STw2NouLZphaCpPZOqnXKQ_SEnfzRRN';     // the long public "anon"/"publishable" key
 
 const SYNC_ON = !!(SUPABASE_URL && SUPABASE_ANON);
 const AUTHK = 'jingxue_auth';   // stores {access_token, refresh_token, email, uid}
