@@ -1,6 +1,6 @@
-const CACHE = 'jingxue-v33';
+const CACHE = 'jingxue-v34';
 const ASSETS = [
-  './', './index.html', './manifest.webmanifest',
+  './', './index.html', './config.js', './manifest.webmanifest',
   './icon-192.png', './icon-512.png', './icon-maskable.png', './apple-touch-icon.png'
 ];
 self.addEventListener('install', e => {
