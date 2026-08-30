@@ -779,6 +779,9 @@ const SUPABASE_URL  = (window.CONFIG && window.CONFIG.SUPABASE_URL)  || '';
 const SUPABASE_ANON = (window.CONFIG && window.CONFIG.SUPABASE_ANON) || '';
 
 const SYNC_ON = !!(SUPABASE_URL && SUPABASE_ANON);
+if(!SYNC_ON)try{console.warn('[Point Study] No Supabase keys found. Accounts, licences and '+
+  'colleagues are switched off, and only the free 20 points are available. '+
+  'Check that config.js exists on the site and has SUPABASE_URL and SUPABASE_ANON filled in.')}catch(e){}
 const AUTHK = 'jingxue_auth';   // stores {access_token, refresh_token, email, uid}
 let AUTH = (()=>{ try{return JSON.parse(store.get(AUTHK))||null}catch(e){return null} })();
 let pushTimer=null, syncing=false, syncPending=null, lastSyncMsg='';
