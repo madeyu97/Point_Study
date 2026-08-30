@@ -14,10 +14,24 @@
 window.CONFIG = {
 
   // Supabase → Project Settings → API → Project URL
-  SUPABASE_URL: 'https://sbaekrboqpfgcdxuzqnu.supabase.co',
+  SUPABASE_URL: '',
 
   // Supabase → Project Settings → API → anon / public key (the long one)
-  SUPABASE_ANON: 'sb_publishable_STw2NouLZphaCpPZOqnXKQ_SEnfzRRN'
+  SUPABASE_ANON: '',
+
+
+  /* ── Legal ──────────────────────────────────────────────
+     The app carries a plain-English privacy summary in
+     Settings regardless. Fill these in once you have
+     published the full documents and the app will link to
+     them; leave them empty and the links are simply hidden. */
+
+  // Where you published PRIVACY-AND-TERMS.md
+  PRIVACY_URL: '',
+  TERMS_URL: '',
+
+  // Shown as the address to write to for data deletion
+  CONTACT_EMAIL: ''
 
 };
 

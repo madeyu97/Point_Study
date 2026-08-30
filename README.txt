@@ -283,3 +283,271 @@ STRUGGLING CARDS 頑固 (v31) — the leech drill
     Review Only now genuinely leads with them.
   Leeches respect archiving and the point/channel/tier filters, and multi-step
   cases are excluded from the drill (they cannot render answer-first).
+
+SESSION REFRESH + COLLEAGUES IN THE HEADER (v35)
+  FIXED: Supabase access tokens expire after about an hour. The licence and
+    colleagues calls did not renew them, so after an hour everything failed
+    with "JWT expired" and only signing out and back in fixed it. Any expired
+    call now renews the session once and retries. If the refresh token itself
+    has died, the app signs out cleanly with a plain message instead of
+    showing database jargon.
+  Colleagues 同 now has its own button in the top bar, next to 設. It was
+    buried in the collapsed mode library.
+
+FIX (v36) — sync could revive a dead streak
+  The cloud copy still held an old streak. Merging took the HIGHER of the two
+  values, so a streak the device had correctly let go was resurrected the
+  moment anything synced — the home screen said 0, then opening Colleagues
+  said 3. Spent streak-freezes came back the same way.
+  A streak is not a cumulative total; it can and must fall to zero. Now:
+    - streak and freezes follow whichever device studied most recently
+    - if both last studied on the same day, the higher streak wins but the
+      LOWER freeze count does (a freeze is spent, never invented)
+    - a merged streak whose last study day is too old is zeroed outright,
+      whatever either side stored
+    - the day is settled immediately after a sync, not only when the home
+      screen happens to be drawn
+  XP and lifetime reviews are genuinely cumulative and still take the max.
+
+FULL AUDIT (v37) — four real bugs found and fixed
+  1. HIGH — intervals could never grow again. Ease drops 0.2 per lapse and
+     lands on 1.4999999999999998 rather than 1.5 (floating point). With a
+     1-day interval, round(1 x 1.4999) is 1, so any heavily-lapsed card was
+     stuck returning EVERY DAY for ever and could never rehabilitate out of
+     leech status. Intervals now always advance by at least one day on a
+     successful review.
+  2. HIGH — safety cards never resolved to a point. Contraindications name the
+     point in pinyin ("Jiquan"), but the resolver expected a code, so all 63
+     returned null: the edit pencil never appeared on them, and channel/tier/
+     point filters did not apply. Now falls back to a pinyin match (62 of 63;
+     the last is the general "Pregnancy" caution, correctly unlinked).
+  3. MED — a corrupt saved state or hand-edited backup could break the app.
+     Every route that sets the state now passes through sanitiseState(), which
+     drops malformed card records and repairs missing objects and numbers.
+  4. MED — esc() did not escape quotes, so a point edited to contain a double
+     quote broke the editor markup. It is now attribute-safe.
+  Verified clean: 409 points with correct canonical channel counts, all 111
+  command-point assignments re-derived from the grid, 8 tone-collision pairs
+  all correct, 5,304 generated cards with no malformed or ambiguous items,
+  RLS on all five tables, no secrets in client files, PWA manifest and service
+  worker sound, and every one of the 25 entry points opening cleanly.
+
+FULL AUDIT (v38) — findings and fixes
+  Audited: file structure, 409-point data integrity, all 13 exercise builders
+  (5,051 generated items), 253 clinical cases, the SRS engine under 300 random
+  gradings, day/streak handling, all five session types, filters/archive/point
+  exclusions, backup round-trip, security, and the PWA/service worker.
+
+  CLEAN: channel counts all match canonical; zero wrong command roles; no
+  duplicate point ids or card keys; no malformed items in any builder; no
+  invalid SRS states; no secrets in the shipped file; no unescaped user text;
+  no eval; all referenced files present.
+
+  FIXED — clinical safety: contraindication rows grouped by CONDITION rather
+  than by point (the "Pregnancy" row listing Hégǔ, Sānyīnjiāo, Kūnlún and
+  others) never reached those points. SP-6 and BL-60 showed NO pregnancy
+  warning on their own cards. Those warnings now attach to the points named,
+  without duplicating one that already exists. 61 -> 63 points carry a caution.
+
+  FIXED — answer leakage: the point-to-category card showed the English name,
+  and some English names contain the role ("Xi-Cleft Gate" for PC-4, "Lower
+  Great Void" for ST-39). That card now shows characters, pinyin and code only.
+
+  FIXED — service worker: a failed GET of any kind fell back to serving
+  index.html, so an offline Supabase call returned HTML to code expecting JSON.
+  The fallback now applies only to page navigations.
+
+  KNOWN AND ACCEPTED: five unused functions remain in the source (harmless);
+  13 envoy rows and 3 dui yao rows reference vertebrae rather than points (they
+  are correct data and render as ordinary flashcards); ST-17 has no functions
+  (correct — it is a landmark point); 48 Extra points are untiered and default
+  to Peripheral.
+
+HEADER ICONS (v39)
+  Settings and Colleagues were CJK glyphs (設 and 同), which read as decoration
+  rather than as buttons. Both are now inline SVG icons — a gear and a pair of
+  figures — drawn in currentColor so they inherit the existing button styling,
+  including the gold "on" state. Also given aria-labels for screen readers.
+  The seal, brand and sound button are unchanged; ♪ is already unambiguous.
+
+SECOND FULL AUDIT (v40) — performance, longevity, edge cases, clinical content
+  New ground covered: a 90-day simulated study run (2,713 gradings), storage
+  projection, per-function profiling, 18 extreme UI states, re-entrancy,
+  and clinical spot-checks against the classical point categories.
+
+  FIXED — home screen was 7x slower than it needed to be. renderHome computed
+    due counts for all 17 modes (368ms of its 375ms) even though the mode
+    library is collapsed and those numbers are invisible. Counts are now only
+    computed when the library is open. renderHome: 375ms -> 49ms.
+  FIXED — starting a session rebuilt the entire 3,825-item pool every time
+    (~490ms, worse on a phone). The pool is now cached and invalidated whenever
+    filters, archiving, point exclusions or edits change it — 11 invalidation
+    points, each verified. Session start: 490ms -> 101ms.
+  FIXED — the archived-cards list in Settings crashed if the archived object
+    was missing. Guarded, though sanitiseState already prevented this in
+    normal use.
+
+  VERIFIED CLEAN: all 12 Yuan-Source, 12 Xi-Cleft, 12 Luo, 12 He-Sea and 8
+    Confluent points are correct; all 18 canonical high-yield points are tier 1;
+    no SRS corruption after 90 days (longest interval 125 days); full study
+    history projects to ~0.56 MB, well inside the 5 MB browser quota; every
+    screen survives 18 extreme states including all-filtered and all-archived;
+    rapid navigation is safe; code resolution is case-insensitive across every
+    channel abbreviation; the rank ladder covers levels 1-100.
+
+  FLAGGED FOR MATT — a clinical judgement, deliberately NOT changed:
+    "Points that send Qi to the Blood" answers SP-10 Xuèhǎi. The classical
+    Influential (Hui) point for Blood is BL-17 Géshū. The neighbouring rows
+    (Vessels LU-9, Sinews GB-34, Marrow GB-39, Bone BL-11) are all the standard
+    Hui points, so this row sits in a Hui-shaped list. The Hui set is also
+    incomplete here — Zang (LR-13), Fu (REN-12) and Qi (REN-17) are absent.
+    Decide whether to change Blood to BL-17 and add the missing three.
+
+EIGHT INFLUENTIAL POINTS COMPLETED (v41)
+  Added the three that were missing: Zang LR-13 Zhangmen, Fu REN-12 Zhongwan,
+  Qi REN-17 Shanzhong. The set is now complete.
+  Blood now accepts BOTH BL-17 Geshu (the classical Hui point) and SP-10
+  Xuehai — either answer is marked correct and both are shown on the back.
+  Underneath, the resonance mode learned to handle rows naming several points.
+  This also fixed a latent bug: rows like "Qi to the Throat" (Lu7, Lu6, Ki6,
+  LI4) only counted the FIRST point as correct, so the other three could appear
+  as WRONG answers even though the data lists them as valid. Now every listed
+  point is accepted, at most two are offered per card so it stays a real test,
+  and a valid point is never used as a distractor.
+  The three new points are also picked up by the importance score.
+
+THIRD AUDIT (v42) — closing the gaps I could reach
+  Covered ground the earlier audits could not: the clinical prose of all 409
+  points, the character dictionary, accessibility, the licence function
+  actually executed, and realistic two-device sync.
+
+  FIXED — sync could be silently dropped. A sync requested while another was
+    running was discarded rather than queued, so the cloud could be left
+    holding a state older than the device. Overlapping requests are now
+    remembered and run once the current sync finishes.
+  FIXED — the licence function returned raw Supabase error text to the
+    browser, disclosing table and policy names to anyone probing it. Failures
+    are now logged to the Netlify function log instead.
+  FIXED — accessibility: the ☆ pin control used a colour at 2.16:1 contrast,
+    below the 3:1 minimum for interactive elements; raised to 3.61:1. Header
+    icon buttons keep their 34px look but now have a 44px touch area.
+
+  VERIFIED — licence function executed end to end against mocked Gumroad and
+    Supabase: valid keys activate, unknown keys and forged sessions are
+    refused, refunds/chargebacks/cancelled subscriptions are rejected, the
+    3-seat limit holds while the same person may always re-activate, and
+    missing environment variables fail loudly.
+  VERIFIED — two devices merge without losing a card from either side, the
+    more-studied record wins a conflict, clock skew cannot inflate a streak or
+    destroy progress, offline work is pushed on reconnect, and a corrupt cloud
+    row cannot poison the device.
+  VERIFIED — prose: one misspelling ("Tonfiy", HT-5), cun notation 100%
+    consistent, no encoding damage, every pinyin toned, every hanzi valid.
+    Character dictionary 359/367 complete (the 8 gaps are rare variant forms
+    absent from the source dictionary; the app skips them cleanly).
+
+  FLAGGED FOR MATT — a data error, not changed without your say-so:
+    EX-2 Dangyang (当阳) carries EX-13 Bailao's location, "2 cun superior to
+    Dazhui DU-14, 1 cun lateral to the midline". Dangyang is a FOREHEAD point —
+    its own functions (migraine, dizziness, vertigo) and its neighbours in the
+    list confirm that. The standard location is on the forehead, directly above
+    the pupil, about 1 cun above the anterior hairline. EX-13's entry is
+    correct as it stands.
+
+FREE EDITION (v43) — 20 points without a licence
+  Without an activated licence the app opens twenty points instead of 409:
+    PC6 LU7 LI4 SP4 SJ5 GB41 KI6 ST36 REN12 SI3
+    LU9 REN17 BL40 GB34 LR3 BL62 REN4 SP6 HT7 DU4
+  Chosen for breadth as well as value: one from every one of the 14 channels,
+  all tier-1, and between them the four Command points and all eight Confluent
+  points — so twelve card types still work and the free edition demonstrates
+  the whole app rather than a crippled corner of it. 394 cards free of 3,853.
+  A card is withheld unless EVERY point it needs is unlocked, so a Dui Yao pair
+  reaching outside the twenty is held back rather than half-shown. Character
+  cards follow the points that use them.
+  Locked points still appear in the Atlas, dimmed and marked "locked", so the
+  scale of what a licence buys is visible.
+  Progress on locked points is withheld, never deleted — activate a licence and
+  everything resumes on its existing schedule.
+  A verified licence is cached on the device, so a paying user offline is not
+  locked out; an online check that comes back empty clears it, so revoking a
+  licence still takes effect.
+
+  HONEST LIMIT: the 409 points ship inside index.html, so this gate is a
+  clear free/paid boundary, not an unbreakable one — anyone technical can read
+  the file. Cloud sync remains the genuinely enforced part, since the database
+  refuses to store anything without a licence row.
+
+CONTENT GATE MADE REAL (v44)
+  The v43 free edition was trivially bypassable, two ways:
+    1. every point shipped inside index.html — view source, Ctrl+F, read all 409
+    2. `ST.lic={key:"x"}` in the browser console flipped licensed() to true
+  Both are now closed by removing the content rather than guarding it.
+  - Locations, functions and English names for the 389 non-free points have
+    been STRIPPED from index.html (40 KB smaller) and moved to a new
+    serverless function, netlify/functions/points.js, which returns them only
+    to a signed-in user holding a licence row. That row can only be written by
+    activate.js, which alone holds the service-role key.
+  - Faking licensed() in the console now achieves nothing: verified in testing
+    that the card pool does not grow, because there is no content to unlock.
+  - After a legitimate unlock the data is cached locally, so the app keeps
+    working offline. Revoking a licence clears the cache and the app returns to
+    twenty points.
+  - Structure (ids, codes, channels, pinyin, characters) still ships, so
+    channel maps and category drills work in the free edition.
+  DEPLOY: netlify/functions/points.js must be uploaded alongside activate.js
+  and uses the same two environment variables.
+
+  STILL NOT ABSOLUTE, honestly: a paying user can extract the payload from
+  their own browser once fetched. No offline-capable app can prevent that. What
+  has changed is that a non-paying visitor now gets nothing without buying —
+  which is the boundary that actually matters commercially.
+
+AUDIT OF THE v44 SPLIT — no changes needed
+  The content-gate rework was audited in depth and came back clean.
+
+  DATA INTEGRITY: all 409 points accounted for — 20 free, 389 in the vault,
+  none missing, none duplicated, no free point damaged, no locked content left
+  in index.html. Pinyin, codes, channels, characters, command roles, cautions,
+  envoy/dui-yao/naming-grid rows all intact. Spot-checked KI1, ST44, BL23,
+  GB20, DU14, EX2.
+
+  LIFECYCLE: a corrupt, null or empty cache is handled without crashing; a
+  partial payload merges what it has and leaves the rest locked; a storage
+  quota failure still lets the session work, it just will not persist.
+
+  INTERACTION: point edits survive lock -> unlock -> lock with the true data
+  underneath (restore-default returns the real location, not a blank);
+  archiving, channel filters and point exclusions all still work with the
+  vault loaded; a backup contains no locked content but restores progress
+  correctly.
+
+  BYPASS ATTEMPTS (seven tried, all failed): setting ST.lic, setting LICENCE,
+  calling applyVault directly with null or {}, forging a cached vault (yields
+  only text the attacker already had), asking the server without a licence,
+  grepping the shipped file, and looking for secrets. None revealed a single
+  locked location. Importantly, importing a licensed user'"'"'s BACKUP FILE copies
+  the licence flag but still unlocks nothing, because the server refuses.
+
+  PERFORMANCE: merge 4ms, first pool build 194ms, cached 0ms, home render 27ms.
+  Storage: 63 KB vault alongside progress.
+
+PRIVACY IN THE APP (v45)
+  Settings now carries a "Privacy & your data" section, written from what the
+  code actually does rather than from a template: what is kept on the device,
+  what is held once you sign in, exactly what a connected colleague can see,
+  every third party involved, what is NOT done (no analytics, advertising,
+  tracking cookies or third-party scripts), how to have everything deleted,
+  and the reminder that this is a study aid rather than a clinical reference.
+  It works offline and needs no configuration.
+  config.js gained PRIVACY_URL, TERMS_URL and CONTACT_EMAIL. Fill them in once
+  you have published PRIVACY-AND-TERMS.md and the app links to them; leave them
+  empty and the links are simply hidden. As with the Supabase keys, app updates
+  never touch config.js.
+
+  FOUND WHILE WRITING IT: the app loads its typefaces from Google Fonts and the
+  stroke-order library from jsDelivr, so every visitor's IP is disclosed to
+  those services. That is ordinary practice but it IS a GDPR consideration in
+  the UK and EU — a German court ruled against unconsented Google Fonts
+  embedding in 2022. Both the in-app summary and the drafted policy now say so
+  plainly. Self-hosting both would remove the issue entirely; say the word.

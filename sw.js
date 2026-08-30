@@ -1,4 +1,4 @@
-const CACHE = 'jingxue-v35';
+const CACHE = 'jingxue-v45';
 const ASSETS = [
   './', './index.html', './config.js', './manifest.webmanifest',
   './icon-192.png', './icon-512.png', './icon-maskable.png', './apple-touch-icon.png'
@@ -21,6 +21,6 @@ self.addEventListener('fetch', e => {
         caches.open(CACHE).then(c => c.put(req, copy)).catch(()=>{});
       }
       return res;
-    }).catch(() => caches.match('./index.html')))
+    }).catch(() => req.mode === 'navigate' ? caches.match('./index.html') : Promise.reject(new Error('offline'))))
   );
 });
