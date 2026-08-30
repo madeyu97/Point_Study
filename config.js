@@ -14,10 +14,10 @@
 window.CONFIG = {
 
   // Supabase → Project Settings → API → Project URL
-  SUPABASE_URL: '',
+  SUPABASE_URL: 'https://sbaekrboqpfgcdxuzqnu.supabase.co',
 
   // Supabase → Project Settings → API → anon / public key (the long one)
-  SUPABASE_ANON: '',
+  SUPABASE_ANON: 'sb_publishable_STw2NouLZphaCpPZOqnXKQ_SEnfzRRN',
 
 
   /* ── Legal ──────────────────────────────────────────────
@@ -27,11 +27,11 @@ window.CONFIG = {
      them; leave them empty and the links are simply hidden. */
 
   // Where you published PRIVACY-AND-TERMS.md
-  PRIVACY_URL: '',
-  TERMS_URL: '',
+  PRIVACY_URL: 'https://point-study.netlify.app/privacy.html',
+  TERMS_URL: 'https://point-study.netlify.app/terms.html',
 
   // Shown as the address to write to for data deletion
-  CONTACT_EMAIL: ''
+  CONTACT_EMAIL: 'mattjgibb.97@gmail.com'
 
 };
 
