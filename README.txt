@@ -551,3 +551,76 @@ PRIVACY IN THE APP (v45)
   the UK and EU — a German court ruled against unconsented Google Fonts
   embedding in 2022. Both the in-app summary and the drafted policy now say so
   plainly. Self-hosting both would remove the issue entirely; say the word.
+
+FIX (v47) — the point picker looked like everything was unlocked
+  Settings -> Points included showed all 409 points ticked even in the free
+  edition, because the tick means "included by YOUR filter", not "unlocked by
+  your licence" — two different things that looked identical. The gate itself
+  was working (sessions were correctly limited to 20) but the screen said
+  otherwise, which is arguably worse than a real leak: it made a working gate
+  look broken.
+  Now a locked point shows a padlock instead of a tick, its row is dimmed, it
+  cannot be toggled, and tapping it explains why. Channel headers read
+  "1 of 27" (unlocked of total) rather than filter counts, and a line at the
+  top of the panel explains the padlock. Once licensed it all reverts to the
+  normal filter behaviour.
+
+FIX (v48) — the channel-map quiz gave itself away
+  Options showed the English name beside the pinyin, and those names are
+  usually literal descriptions of where the point sits — "Elbow Bone-Hole",
+  "Upper Arm", "Pool at the Crook". Knowing roughly where position 12 of 20
+  falls on the arm was enough to pick the answer without knowing the point.
+  This was my own doing: I had swapped the code-number out of the options to
+  stop people solving it by arithmetic off the track, and replaced it with the
+  English name, which turned out to leak the same information a different way.
+  Options now show pinyin only. Knowing which name belongs at which position
+  IS the skill being tested. The answer side still teaches the code, English
+  name, location and neighbours.
+
+  TIDIED at the same time: nine points had pinyin that broke the app's own
+  convention — lowercase starts and stray spaces ("yáng xī", "shàng jù xū",
+  "Zhōng chōng"). Now consistent with the rest. One was a real error: SP-9 read
+  "yīnlíngqúan" with the tone mark on the wrong vowel; corrected to
+  "Yīnlíngquán". EX-12 "Jīnjīn, Yùyè" left as it is — genuinely two points.
+  Verified afterwards that all 111 command-grid rows and the contraindications
+  still resolve.
+
+  NOTED, not changed: BL-14, BL-22 and BL-45 have their pinyin in the English
+  field instead of a translation ("Juéyīnshū", "Sanjiao Shu", "Yìxǐ"), and the
+  nine Heart-channel points have no English name at all because the source
+  spreadsheet had no English column for that sheet. Harmless — the app simply
+  omits the line — but worth knowing if you ever fill them in.
+
+ENGLISH NAMES COMPLETED (v49)
+  All 409 points now carry a unique English name. Previously twelve did not.
+    The nine Heart points had none at all (the source sheet had no English
+    column): HT1 Highest Spring, HT2 Blue-Green Spirit, HT3 Lesser Sea,
+    HT4 Spirit Way, HT5 Connecting Li, HT6 Yin Cleft, HT7 Spirit Gate,
+    HT8 Lesser Mansion, HT9 Lesser Surge.
+    BL14 had its pinyin in the field; now "Pericardium Shu", matching the
+    house convention where every other Back-Shu names its organ.
+    BL22 is now "San Jiao Shu", spelled as the channel is elsewhere.
+    BL45 譩譆 had its pinyin; now "Sigh of Pain" — the characters imitate the
+    sound a patient makes when the point is pressed.
+  HT4 靈道 was going to be "Spirit Pathway", which already belongs to DU11
+    神道. Different characters, so HT4 became "Spirit Way" to keep every name
+    distinct — two identical English names would be confusing in a study app.
+  These are standard renderings, but translations vary between textbooks and
+  you are the clinical authority: any of them can be changed in seconds via
+  the point editor, and your version then appears everywhere.
+
+FIX (v50) — two pedagogy problems
+  1. A POINT'S CARDS ARRIVED TOGETHER. Every card for one point scores the same
+     priority, so sorting a due queue by priority filed all four side by side —
+     and answering the second, third and fourth straight after the first is
+     short-term memory, not recall. Queues are now round-robined across points:
+     measured on a 160-card review, the longest run of one point is 1 and its
+     cards sit an average of 40 apart. Leeches still come first.
+  2. CHANNEL-SEQUENCE CARDS WERE MOSTLY ROTE. "Which point comes next" was
+     generated for every consecutive pair on every channel, so most asked you
+     to recite the order of peripheral points from a bare name — nothing to
+     anchor to, and they crowded out useful reviews. Now generated only where
+     the ANSWER is a point you would actually reach for (tier 1-3): 361 cards
+     down to 173, spread 52/59/62 across Essential/Core/Standard. The prompt
+     also shows the starting point's location, so there is a physical anchor
+     rather than a name floating free.
