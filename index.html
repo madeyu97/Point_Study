@@ -913,7 +913,18 @@ async function authSetPassword(password){
    do about it. */
 function authErr(e){
   const m=String((e&&e.message)||e||'');
-  if(/sending (confirmation|recovery|magic|otp)?\s*email|smtp|not authorized|rate limit|over_email_send/i.test(m))
+  /* The exact words the server used, for whoever is standing at the console
+     trying to work out why nothing arrived. Customers never open this. */
+  try{ console.warn('[auth] ' + m); }catch(_){}
+  /* A rate limit is NOT a send failure. Lumping the two together sends someone
+     who simply asked twice in a minute off to support for nothing — and, when
+     you are the one testing, hides a working mail setup behind the words
+     "the fault is at our end". So the limits are read first. */
+  const soon=/only request this after (\d+) seconds?/i.exec(m);
+  if(soon)return 'That was quick — wait '+soon[1]+' seconds and ask for another code.';
+  if(/rate limit|over_email_send|too many requests/i.test(m))
+    return 'That is as many codes as we can send this hour. Try again shortly — there is nothing wrong with your account.';
+  if(/sending (confirmation|recovery|magic|otp)?\s*email|smtp|not authorized/i.test(m))
     return 'We could not send that email — the fault is at our end, not with your account.'
       + (SUPPORT_EMAIL?(' Email '+SUPPORT_EMAIL+' and we will get you in.'):' Please get in touch and we will get you in.');
   if(/invalid login credentials/i.test(m))return 'That email and password do not match an account. If you have never set a password, use the emailed code.';
@@ -950,6 +961,10 @@ function mergeStates(local, remote){
   // Cumulative totals only ever go up, so the higher value is the true one.
   out.xp=Math.max(local.xp||0, remote.xp||0);
   out.reviews=Math.max(local.reviews||0, remote.reviews||0);
+  /* Having been asked something once is not a value that can go backwards.
+     Without this latch, a device whose state happens to be newer but which
+     never saw the prompt would drop the flag and ask all over again. */
+  out.unAsked=(local.unAsked||remote.unAsked)?1:0;
   // A streak is NOT cumulative — it can and should fall to zero. Taking the
   // max would revive a streak that has already lapsed, and would hand back
   // freezes that were already spent. Both follow whichever device studied
@@ -1074,7 +1089,7 @@ async function activateLicence(key){
     body:JSON.stringify({licence:key})});
   const d=await r.json().catch(()=>({error:'Unreadable response'}));
   if(!r.ok)throw new Error(d.error||('HTTP '+r.status));
-  await loadLicence();invalidatePool();return d}
+  await loadLicence();invalidatePool();queueUsernameOffer();return d}
 /* licensed() is defined once, in the free-edition block above — it also
    trusts a locally cached licence so a paying user is not locked out offline. */
 async function loadProfile(){
@@ -1087,11 +1102,28 @@ async function claimUsername(u){
     headers:{'Prefer':'resolution=merge-duplicates,return=minimal'},
     body:JSON.stringify({user_id:AUTH.uid,username:un})});
   MYPROFILE={user_id:AUTH.uid,username:un};return MYPROFILE}
-/* ---- first launch as a full member: tell them Colleagues exists ----
+/* ---- becoming a full member: tell them Colleagues exists ----
    A member who has never claimed a username cannot be found by anyone, and the
    feature is only discoverable from inside a screen they have no reason to
-   open. So ask once, on the first launch after the licence activates, and
-   never again — whichever way they answer. */
+   open. So ask once, and never again — whichever way they answer.
+
+   queueUsernameOffer() exists because "once" has to include the moment the
+   licence activates, not only the next launch. A first-time buyer activates
+   mid-session; asking them at their next launch means the person who most
+   needs to hear about Colleagues is the one person who does not. It waits for
+   any overlay already on screen to close — the password offer fires on the
+   same journey — and gives up after about eight seconds rather than stacking
+   one dialogue on top of another. Giving up costs nothing: ST.unAsked is set
+   inside maybeOfferUsername, so an offer that never appeared is offered again
+   next launch. */
+function queueUsernameOffer(tries){
+  const n=typeof tries==='number'?tries:10;
+  setTimeout(()=>{
+    if(!SYNC_ON||!signedIn()||!licensed()||ST.unAsked)return;
+    if(document.querySelector('.ovl')){ if(n>0)queueUsernameOffer(n-1); return }
+    maybeOfferUsername();
+  },800);
+}
 async function maybeOfferUsername(){
   if(!SYNC_ON||!signedIn()||!licensed()||ST.unAsked)return;
   try{ if(MYPROFILE||await loadProfile())return; }   // already has one
@@ -1342,7 +1374,7 @@ function renderAccount(mount){
     if(!/.+@.+\..+/.test(email()))return msg('Enter a valid email.');
     const pw=$('#au-pass').value||''; if(!pw)return msg('Enter your password.');
     msg('Signing in…');
-    try{ await authPassword(email(),pw); msg('Signed in — merging your progress…'); await doSync('pull'); openSettings(); }
+    try{ await authPassword(email(),pw); msg('Signed in — merging your progress…'); await doSync('pull'); openSettings(); await loadLicence().catch(()=>{}); queueUsernameOffer(); }
     catch(e){ msg(esc(authErr(e))); }};
   $('#au-send').onclick=async()=>{
     if(!/.+@.+\..+/.test(email()))return msg('Enter a valid email.');
@@ -1352,7 +1384,7 @@ function renderAccount(mount){
   $('#au-verify').onclick=async()=>{const code=($('#au-code').value||'').trim();
     if(!code)return msg('Enter the code from your email.');
     msg('Verifying…');
-    try{ await authVerifyCode(email(), code); msg('Signed in — merging your progress…'); await doSync('pull'); openSettings(); offerPassword(); }
+    try{ await authVerifyCode(email(), code); msg('Signed in — merging your progress…'); await doSync('pull'); openSettings(); await loadLicence().catch(()=>{}); offerPassword(); queueUsernameOffer(); }
     catch(e){ msg(esc(authErr(e))); }};
 }
 
@@ -1932,7 +1964,16 @@ const DUI_STOP=new Set(('the of and for to a in with esp all its on or by from a
   +'calm disperse expel relieve access anchor pull prick treat begin initiate reconnect circulate').split(' '));
 const duiStem=w=>w.replace(/ies$/,'y').replace(/(es|s)$/,'').replace(/(ing|ed)$/,'');
 const duiWords=s=>[...new Set(String(s).toLowerCase().replace(/[^a-z0-9 ]/g,' ').split(/\s+/)
-  .filter(w=>w.length>2&&!DUI_STOP.has(w)&&!DUI_STOP.has(duiStem(w))).map(duiStem))];
+  .filter(w=>w.length>1&&!DUI_STOP.has(w)&&!DUI_STOP.has(duiStem(w))))];
+/* Two words echo when they are identical, or — for words of four letters or
+   more — when their first five letters agree. That is what lets "stagnation"
+   meet "stagnant" and "testicle" meet "testicles".
+   The rule this replaces stemmed both words and compared them exactly. It
+   failed on those pairs, and it discarded every word of two letters or fewer,
+   which meant qi never matched qi — on a page about Chinese medicine. */
+const duiEcho=(a,b)=>{if(a===b)return true;
+  const n=Math.min(a.length,b.length);
+  return n>=4&&a.slice(0,Math.min(n,5))===b.slice(0,Math.min(n,5))};
 /* Three rows are Back-Shu combinations written by vertebral level rather than
    by point. The level → point mapping is read off each Bladder point's own
    location text, so it is not an assumption laid over your data. */
@@ -1947,7 +1988,7 @@ function duiResolve(tok,shu){const p=resolveCode(tok);if(p)return p;
   const v=/^([TLS])-?(\d{1,2})$/i.exec(tok);
   return v?(shu[v[1].toUpperCase()+v[2]]||null):null}
 function duiContribution(d){
-  const ind=new Set(duiWords(d.indication)),shu=shuByLevel();
+  const ind=duiWords(d.indication),shu=shuByLevel();
   return duiTokens(d).map(tok=>{
     const p=duiResolve(tok,shu);
     if(!p)return `<div class="duirow"><div class="duipt">${esc(tok)}</div></div>`;
@@ -1955,7 +1996,7 @@ function duiContribution(d){
       +(tok.replace(/[^a-z0-9]/gi,'').toUpperCase()!==(p.code+p.num)?` <span>· ${esc(tok)}</span>`:'')+`</div>`;
     if(!ptUnlocked2(p.id))return `<div class="duirow">${head}<div class="duifn none">unlocks with the full edition</div></div>`;
     const fns=p.functions||[];
-    const body=fns.length?fns.map(f=>`<div class="duifn${duiWords(f).some(w=>ind.has(w))?' on':''}">${esc(f)}</div>`).join('')
+    const body=fns.length?fns.map(f=>`<div class="duifn${duiWords(f).some(w=>ind.some(iw=>duiEcho(w,iw)))?' on':''}">${esc(f)}</div>`).join('')
                          :`<div class="duifn none">no function recorded for this point</div>`;
     return `<div class="duirow">${head}${body}</div>`}).join('')}
 function buildDui(){return DB.duiyao.map((d,i)=>{const codes=d.combo.split('+').map(s=>s.trim());
@@ -2421,7 +2462,10 @@ function startUnified(mount,specId){
 
 /* ============ MEASUREMENT DIAGRAMS ============ */
 /* Drawn ONLY from what the location text says. A point whose text is a
-   palpation instruction gets no diagram — the locator does that job.
+   palpation instruction rather than a measurement gets no diagram at all:
+   there is nothing to draw, and a bar with an invented number on it would be
+   worse than no bar. (The anatomical locator that used to fill that gap was
+   removed in v71 — it never reached a quality worth shipping.)
    Every measurement label traces to a number in the source text. */
 const DIAG = {"LU5":{"type":"atEnd","seg":"forearm","end":"a"},"LU6":{"type":"midoff","d":1,"dir":"superior","a":"wrist","b":"elbow crease"},"LU8":{"type":"fromPoint","d":1,"dir":"proximal","ref":"LU-9","seg":"forearm"},"LU9":{"type":"atEnd","seg":"forearm","end":"b"},"LI6":{"type":"bisect","a":"LI-5","b":"LI-11","toward":"LI-5","f":0.25},"LI9":{"type":"bisect","a":"LI-5","b":"LI-11","toward":"LI-11","f":0.75},"LI10":{"type":"fromPoint","d":2,"dir":"distal","ref":"LI-11","seg":"forearm"},"ST36":{"type":"fromPoint","d":3,"dir":"inferior","ref":"ST-35","seg":"legLat"},"ST37":{"type":"fromPoint","d":3,"dir":"inferior","ref":"ST-36","seg":"legLat"},"ST39":{"type":"fromPoint","d":1,"dir":"inferior","ref":"ST-38","seg":"legLat"},"ST42":{"type":"fromPoint","d":1.5,"dir":"distal","ref":"ST-41","seg":"legLat"},"ST43":{"type":"fromPoint","d":1,"dir":"proximal","ref":"ST-44","seg":"legLat"},"SP7":{"type":"fromPoint","d":3,"dir":"superior","ref":"SP-6","seg":"legMed"},"SP8":{"type":"fromPoint","d":3,"dir":"inferior","ref":"SP-9","seg":"legMed"},"HT2":{"type":"fromPoint","d":3,"dir":"proximal","ref":"HT-3","seg":"forearm"},"HT4":{"type":"fromPoint","d":1.5,"dir":"proximal","ref":"HT-7","seg":"forearm"},"HT5":{"type":"fromPoint","d":1,"dir":"proximal","ref":"HT-7","seg":"forearm"},"HT6":{"type":"fromPoint","d":0.5,"dir":"proximal","ref":"HT-7","seg":"forearm"},"SI7":{"type":"fromPoint","d":5,"dir":"proximal","ref":"SI-5","seg":"forearm"},"BL38":{"type":"fromPoint","d":1,"dir":"superior","ref":"BL-39","seg":"legLat"},"BL39":{"type":"atEnd","seg":"legLat","end":"a"},"BL40":{"type":"atEnd","seg":"legLat","end":"a"},"BL55":{"type":"fromPoint","d":2,"dir":"inferior","ref":"BL-40","seg":"legLat"},"KI5":{"type":"fromPoint","d":1,"dir":"inferior","ref":"KI-3","seg":"legMed"},"KI10":{"type":"atEnd","seg":"legMed","end":"a"},"PC3":{"type":"atEnd","seg":"forearm","end":"a"},"SJ5":{"type":"fromPoint","d":2,"dir":"proximal","ref":"SJ-4","seg":"forearm"},"SI14":{"type":"back","lat":3,"lvl":"T1"},"SI15":{"type":"back","lat":2,"lvl":"C7"},"BL11":{"type":"back","lat":1.5,"lvl":"T1"},"BL12":{"type":"back","lat":1.5,"lvl":"T2"},"BL13":{"type":"back","lat":1.5,"lvl":"T3"},"BL14":{"type":"back","lat":1.5,"lvl":"T4"},"BL15":{"type":"back","lat":1.5,"lvl":"T5"},"BL16":{"type":"back","lat":1.5,"lvl":"T6"},"BL17":{"type":"back","lat":1.5,"lvl":"T7"},"BL18":{"type":"back","lat":1.5,"lvl":"T9"},"BL20":{"type":"back","lat":1.5,"lvl":"T11"},"BL21":{"type":"back","lat":1.5,"lvl":"T12"},"BL22":{"type":"back","lat":1.5,"lvl":"L1"},"BL23":{"type":"back","lat":1.5,"lvl":"L2"},"BL24":{"type":"back","lat":1.5,"lvl":"L3"},"BL25":{"type":"back","lat":1.5,"lvl":"L4"},"BL26":{"type":"back","lat":1.5,"lvl":"L5"},"BL41":{"type":"back","lat":3,"lvl":"T2"},"BL42":{"type":"back","lat":3,"lvl":"T3"},"BL43":{"type":"back","lat":3,"lvl":"T4"},"BL44":{"type":"back","lat":3,"lvl":"T5"},"BL45":{"type":"back","lat":3,"lvl":"T6"},"BL46":{"type":"back","lat":3,"lvl":"T7"},"BL47":{"type":"back","lat":3,"lvl":"T9"},"BL48":{"type":"back","lat":3,"lvl":"T10"},"BL49":{"type":"back","lat":3,"lvl":"T11"},"BL50":{"type":"back","lat":3,"lvl":"T12"},"BL51":{"type":"back","lat":3,"lvl":"L1"},"BL52":{"type":"back","lat":3,"lvl":"L2"},"ST19":{"type":"torso","lat":2,"d":6,"side":"above"},"ST20":{"type":"torso","lat":2,"d":5,"side":"above"},"ST21":{"type":"torso","lat":2,"d":4,"side":"above"},"ST22":{"type":"torso","lat":2,"d":3,"side":"above"},"ST23":{"type":"torso","lat":2,"d":2,"side":"above"},"ST24":{"type":"torso","lat":2,"d":1,"side":"above"},"ST25":{"type":"torso","lat":2,"d":0,"side":"at"},"ST26":{"type":"torso","lat":2,"d":1,"side":"below"},"ST27":{"type":"torso","lat":2,"d":2,"side":"below"},"ST28":{"type":"torso","lat":2,"d":3,"side":"below"},"ST29":{"type":"torso","lat":2,"d":4,"side":"below"},"KI11":{"type":"torso","lat":0.5,"d":5,"side":"below"},"KI12":{"type":"torso","lat":0.5,"d":4,"side":"below"},"KI13":{"type":"torso","lat":0.5,"d":3,"side":"below"},"KI14":{"type":"torso","lat":0.5,"d":2,"side":"below"},"KI15":{"type":"torso","lat":0.5,"d":1,"side":"below"},"KI17":{"type":"torso","lat":0.5,"d":2,"side":"above"},"KI18":{"type":"torso","lat":0.5,"d":3,"side":"above"},"KI19":{"type":"torso","lat":0.5,"d":4,"side":"above"},"KI20":{"type":"torso","lat":0.5,"d":5,"side":"above"},"KI21":{"type":"torso","lat":0.5,"d":6,"side":"above"},"REN2":{"type":"torso","lat":0,"d":5,"side":"below"},"REN3":{"type":"torso","lat":0,"d":4,"side":"below"},"REN4":{"type":"torso","lat":0,"d":3,"side":"below"},"REN5":{"type":"torso","lat":0,"d":2,"side":"below"},"REN6":{"type":"torso","lat":0,"d":1.5,"side":"below"},"REN7":{"type":"torso","lat":0,"d":1,"side":"below"},"REN9":{"type":"torso","lat":0,"d":1,"side":"above"},"REN10":{"type":"torso","lat":0,"d":2,"side":"above"},"REN11":{"type":"torso","lat":0,"d":3,"side":"above"},"REN12":{"type":"torso","lat":0,"d":4,"side":"above"},"REN13":{"type":"torso","lat":0,"d":5,"side":"above"},"REN14":{"type":"torso","lat":0,"d":6,"side":"above"},"REN15":{"type":"torso","lat":0,"d":7,"side":"above"},"ST14":{"type":"chest","ics":1,"lat":4.0},"ST15":{"type":"chest","ics":2,"lat":4.0},"ST16":{"type":"chest","ics":3,"lat":4.0},"ST18":{"type":"chest","ics":5,"lat":4.0},"SP17":{"type":"chest","ics":5,"lat":6.0},"SP18":{"type":"chest","ics":4,"lat":6.0},"SP19":{"type":"chest","ics":3,"lat":6.0},"SP20":{"type":"chest","ics":2,"lat":6.0},"KI22":{"type":"chest","ics":5,"lat":2.0},"KI23":{"type":"chest","ics":4,"lat":2.0},"KI24":{"type":"chest","ics":3,"lat":2.0},"KI25":{"type":"chest","ics":2,"lat":2.0},"KI26":{"type":"chest","ics":1,"lat":2.0},"GB24":{"type":"chest","ics":7,"lat":4.0},"LR14":{"type":"chest","ics":6,"lat":4.0},"REN17":{"type":"chest","ics":4,"lat":0.0},"REN18":{"type":"chest","ics":3,"lat":0.0},"REN19":{"type":"chest","ics":2,"lat":0.0},"REN20":{"type":"chest","ics":1,"lat":0.0},"LU3":{"type":"fromEnd","seg":"upperarm","end":"a","d":3.0,"dir":"inferior"},"LU4":{"type":"fromEnd","seg":"upperarm","end":"a","d":4.0,"dir":"inferior"},"SP6":{"type":"fromEnd","seg":"legMed","end":"b","d":3.0,"dir":"superior"},"BL3":{"type":"head","d":0.5,"from":"anterior"},"BL4":{"type":"head","d":0.5,"from":"anterior"},"BL7":{"type":"head","d":4.0,"from":"anterior"},"BL19":{"type":"back","lat":1.5,"lvl":"T10"},"BL62":{"type":"fromEnd","seg":"legLat","end":"b","d":0.5,"dir":"inferior"},"KI6":{"type":"fromEnd","seg":"legMed","end":"b","d":1.0,"dir":"below"},"PC2":{"type":"fromEnd","seg":"upperarm","end":"a","d":2.0,"dir":"below"},"GB13":{"type":"head","d":0.5,"from":"anterior"},"GB15":{"type":"head","d":0.5,"from":"anterior"},"GB37":{"type":"fromEnd","seg":"legLat","end":"b","d":5.0,"dir":"superior"},"GB38":{"type":"fromEnd","seg":"legLat","end":"b","d":4.0,"dir":"superior"},"GB39":{"type":"fromEnd","seg":"legLat","end":"b","d":3.0,"dir":"superior"},"DU22":{"type":"head","d":2.0,"from":"anterior"},"DU23":{"type":"head","d":1.0,"from":"anterior"},"DU24":{"type":"head","d":0.5,"from":"anterior"}};
 const D_SEG={forearm:{len:12,a:'Elbow crease',b:'Wrist crease'},
