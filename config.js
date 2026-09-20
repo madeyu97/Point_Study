@@ -18,6 +18,7 @@ window.CONFIG = {
 
   // Supabase → Project Settings → API → anon / public key (the long one)
   SUPABASE_ANON: 'sb_publishable_STw2NouLZphaCpPZOqnXKQ_SEnfzRRN',
+  SUPPORT_EMAIL: 'supports@kangdaostudy.uk'
 
 
   /* ── Legal ──────────────────────────────────────────────
@@ -31,7 +32,7 @@ window.CONFIG = {
   TERMS_URL: 'https://point-study.netlify.app/terms.html',
 
   // Shown as the address to write to for data deletion
-  CONTACT_EMAIL: 'mattjgibb.97@gmail.com'
+  CONTACT_EMAIL: 'supports@kangdaostudy.uk'
 
 };
 
