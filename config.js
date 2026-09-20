@@ -18,7 +18,7 @@ window.CONFIG = {
 
   // Supabase → Project Settings → API → anon / public key (the long one)
   SUPABASE_ANON: 'sb_publishable_STw2NouLZphaCpPZOqnXKQ_SEnfzRRN',
-  SUPPORT_EMAIL: 'supports@kangdaostudy.uk'
+  SUPPORT_EMAIL: 'supports@kangdaostudy.uk',
 
 
   /* ── Legal ──────────────────────────────────────────────
