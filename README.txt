@@ -624,3 +624,124 @@ FIX (v50) — two pedagogy problems
      down to 173, spread 52/59/62 across Essential/Core/Standard. The prompt
      also shows the starting point's location, so there is a physical anchor
      rather than a name floating free.
+
+FIX (v51) — introduction order, characters, Hui-Meeting names
+  1. A POINT IS MET IN LAYERS. Location, then category, then functions, then
+     cautions, then Dui Yao pairs. A new card is only introduced once its point
+     has been met at every earlier layer it has (a point with no category card
+     goes straight from location to functions). Previously a caution could be
+     the first thing you ever saw of a point — "No moxa" for a point you could
+     not yet place, which gives the fact nothing to attach to. Applies to every
+     mixed session and every single deck; reviews are never held back. A deck
+     with nothing yet unlocked says why and links to Learn New Points.
+     Regional rows ("sends Qi to the Throat") count as functions, not category.
+     Learn New Points now runs: location, location, category, function,
+     function. The study card and the Atlas show a point in the same order,
+     with its Dui Yao pairs last.
+     Tested: fresh start, 20 generated sessions, no caution or pair card. A
+     simulated 40 days with Learn sessions mixed in: zero order violations.
+  2. CHARACTERS ARE OPTIONAL. No longer drawn into Daily Goal, Balanced
+     Practice or Timed Sprint; reached only from the Characters screen.
+     Character answers no longer fill the daily goal ring (they still earn XP
+     and keep the streak). The Characters card-type filter is gone — it no
+     longer controlled anything.
+  3. "INFLUENTIAL POINT" RENAMED. Now Hui-Meeting point, named for the tissue it
+     gathers: GB-39 reads "Hui-Meeting point of Marrow · 髓會".
+  4. BUG: FREE EDITION SHOWED LOCKED PAIRS. Dui Yao keys became content-derived
+     but the point lookup still read them as array positions, so it found no
+     points and every pair passed the free-edition check. 27 of 43 pairs used
+     points outside the free twenty; now 16 pairs show, all within it. The same
+     fix makes channel and tier filters apply to pairs again.
+  Service worker cache bumped to jingxue-v80 so installed copies update.
+
+POINT REASONING (v52) — the old Clinical Cases, rebuilt
+  The exercises were framed as scenarios they were not ("Clinical scenario — a
+  colleague groups these as Shu Stream points", "Consider the point…"). Every
+  one is now a direct question, and the section is renamed Point Reasoning 推理.
+  Six types:
+    Two facts          "Which He Sea point has this function?" — options include
+                       other He Sea points and a same-channel point, so both
+                       facts are needed.
+    Odd one out        "Which one does not belong?" — the odd point holds none of
+                       the three's categories and all four are on different
+                       channels, so exactly one answer is defensible (checked
+                       across all 27).
+    In common          "What do these three have in common?"
+    Indication+channel Your Clinical Reasoning data applied: indication and
+                       channel shown, "Which point?" — five channels per
+                       indication.
+    Complete the set   One category, three channels.
+    Build the pair     "Which two points pair for this?" No longer called
+                       classical. The answer shows your 'why', not both points'
+                       functions.
+  Point sets are seeded from each card's key, so a card is the same question
+  when it returns for review (the old ones drew new points every time). The old
+  hard-coded role descriptions are gone — everything comes from your data.
+  Retired exercise history is pruned on launch.
+
+  FIX: exercises had no introduction gate, so pair-building ones appeared on
+  day one. Each exercise now records its points and the layer they must have
+  reached. Pairs (cards and exercises) also require each point to have been
+  answered on its own at least once. 60 simulated days: zero violations.
+  Free edition: 69 exercises, all within the free twenty.
+  Service worker cache bumped to jingxue-v81.
+
+PRONUNCIATION + BL66/SI2 (v53)
+  1. A speaker button beside the pinyin — study card, answers, Function →
+     Point, Command Matrix, Point Reasoning reveals, Channel Map, Atlas — says
+     the point name. It uses the device's own Mandarin voice, so it works
+     offline wherever that voice is installed; with none, a toast says how to
+     add one. Tapping it never flips a card, opens a map node or picks an answer.
+     Polyphonic characters (俞 shū, 少 shào, 曲, 都, 舍, 郄, 臑…) are misread by
+     speech engines, so for those only the voice is handed a same-sounding
+     single-reading character chosen from the card's own pinyin — 肺俞 is
+     spoken as 肺書, Fèishū. 59 names are covered. The voice therefore says
+     exactly what the card's pinyin says.
+  2. BL66 + SI2 rationale replaced with Matt's wording (review history kept —
+     the card's key comes from the pair and indication, not the text).
+  Service worker cache bumped to jingxue-v82.
+
+NEEDLE DIRECTION + PINYIN TIDY (v54)
+  1. NEEDLE DIRECTION (針向) — a new session under Apply. Two card types:
+     "Which are correct? Select all that apply" (never says how many), and
+     "Which one is wrong?" (one card per wrong direction, when a point has at
+     least two right ones to hide it among). The answer lists every right and
+     wrong direction with what the angle protects.
+     DATA IS A DRAFT — NEEDLING in index.html, 17 entries covering 60 points
+     (GB20, BL10, DU15/16, REN22, BL1, ST1, LU1/2, thoracic Back-Shu inner and
+     outer lines, intercostal chest points, REN17, thoracic Du points, REN14/15,
+     DU1, Yintang, LI20, ST9). Written from standard textbook needling; check
+     every line before release. Every wrong option is written for its own
+     points, never borrowed from another.
+     A direction card opens once the point's location has been met. Like
+     Characters, the cards are introduced only in their own session; once
+     studied, their reviews come due in Daily Goal and other mixed sessions.
+  2. CHARACTERS: same rule — never introduced by a mixed session, but studied
+     characters now come back for review in Daily Goal, and those reviews count
+     toward the goal. Both have "reviews only" toggles in the card-type filters.
+  3. PINYIN: Jiāshǐ → Jiānshǐ (PC5); tone marks moved to the right vowel in
+     Tàibái, Tàixī, Tàichōng, Lòugǔ, Shuǐtū, Liángqiū, Jiānjǐng, Títuō,
+     Huátuójiājǐ, Shíqīzhuīxià; spacing/capitals in five naming-grid entries.
+     SJ18 is now 瘈脈 (pinyin Qìmài kept; the voice says qì). Readings unchanged.
+  Service worker cache bumped to jingxue-v83.
+
+DAILY GOAL, DIAGRAMS, WORDING (v55)
+  1. DAILY GOAL NO LONGER JUMPS. The counter used to follow the queue, which
+     grew as failed cards came back and at the end silently took in whatever
+     had fallen due — "30 / 30" became "31 / 52". It now counts toward the goal
+     itself and climbs one per card to the goal. On reaching it a popup says
+     "Congratulations, you completed your daily goal! Keep going and clear due
+     cards?" with the number due. Keep going starts a separate phase counted as
+     cards cleared against a number fixed when it starts (a failed card holds
+     the count until it is cleared); Finish ends the session. Opening Daily
+     Goal after the goal is already met goes straight to clearing due cards.
+     The end screen shows goal progress and counts cards actually answered.
+  2. LOCATION DIAGRAMS READABLE ON A PHONE. Each drawing is cropped to what is
+     actually drawn and given the card's full width (they used a third of a
+     fixed canvas, so labels rendered at 7–10px). Labels enlarged; the scalp
+     scale redrawn shorter with two-line end labels; back labels at the
+     clinical landmarks C7, T3, T7, T12, L4; overlapping labels separated.
+     Checked on a 375px phone across all 127 diagrams: no overlapping labels,
+     smallest text 11.6px (a step number inside its circle), most 15–20px.
+  3. "Which command category?" → "Which category?"
+  Service worker cache bumped to jingxue-v84.
