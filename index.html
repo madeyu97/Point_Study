@@ -326,6 +326,8 @@ table.matrix td{color:var(--paper-faint);background:var(--ink2);transition:.12s}
 table.matrix td.has{cursor:pointer}table.matrix td.has:hover{background:var(--panel)}
 table.matrix td.rev{color:var(--gold);font-family:var(--han);font-size:15px}
 table.matrix td.rev .py{display:block;font-family:var(--disp);font-style:italic;font-size:11.5px;color:var(--paper-dim)}
+table.matrix td.rev .cd{display:block;font-family:var(--disp);font-weight:600;font-size:12.5px;letter-spacing:.4px;color:var(--seal);margin-top:1px}
+table.matrix td.rev.only .cd{font-size:14px;margin:0}
 
 /* atlas */
 .search{width:100%;font-family:var(--serif);font-size:16px;padding:13px 16px;border-radius:12px;border:1px solid var(--line2);background:var(--ink2);color:var(--paper);margin-bottom:13px}
@@ -1722,19 +1724,161 @@ function achStats(){const got=ACH.filter(a=>ST.ach[a.id]).length;return{got,tota
 function checkAch(){ACH.forEach(a=>{if(!ST.ach[a.id]&&a.t()){ST.ach[a.id]=now();toast(a.ic,'Achievement · '+a.n,a.d);sfx('achieve');burst('gold');}})}
 
 /* ============ SOUND (Web Audio synth) ============ */
-let AC=null;function ac(){if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)()}catch(e){}}return AC}
-function tone(f,t,dur,vol,type){const c=ac();if(!c||!ST.soundOn)return;const o=c.createOscillator(),g=c.createGain();o.type=type||'sine';o.frequency.value=f;
-  o.connect(g);g.connect(c.destination);g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+0.012);g.gain.exponentialRampToValueAtTime(0.0001,t+dur);o.start(t);o.stop(t+dur+0.02)}
-function sfx(kind){const c=ac();if(!c||!ST.soundOn)return;const t=c.currentTime;
-  if(kind==='good'){tone(523,t,.13,.13);tone(784,t+.07,.16,.12)}
-  else if(kind==='easy'){tone(523,t,.1,.1);tone(659,t+.05,.1,.1);tone(880,t+.1,.18,.12)}
-  else if(kind==='hard'){tone(440,t,.14,.1,'triangle')}
-  else if(kind==='again'){tone(196,t,.16,.09,'sine');tone(165,t+.04,.18,.07)}
-  else if(kind==='tick'){tone(680+Math.min(combo,12)*40,t,.06,.07,'square')}
-  else if(kind==='level'){[523,659,784,1047].forEach((f,i)=>tone(f,t+i*.09,.3,.12))}
-  else if(kind==='goal'){tone(196,t,1.6,.16,'sine');tone(294,t+.02,1.4,.1);tone(392,t+.04,1.2,.08)}
-  else if(kind==='achieve'){[392,523,659].forEach((f,i)=>tone(f,t+i*.08,.25,.11))}
+/* ============ SOUND ============ */
+/* Every sound is generated, not recorded: struck bronze for right answers,
+   wood for a miss, a singing bowl, a temple bell, and a gong rebuilt tone by
+   tone from a recording Matt chose, each tone a narrow resonating band rather
+   than a pure note, in a small room. Long sounds are made in a background worker
+   so the screen never waits. Works offline and adds nothing to the download. */
+function SYNTH(sr){
+  /* one decaying sine partial */
+  function part(o,t0,f,a,dec,att){att=att||0.002;const n0=Math.floor(t0*sr),w=2*Math.PI*f/sr,na=Math.max(1,att*sr),nd=dec*sr;
+    for(let i=n0,k=0;i<o.length;i++,k++){const env=(k<na?k/na:1)*Math.exp(-k/nd);if(k>na&&env<1.5e-4)break;o[i]+=a*env*Math.sin(w*k)}}
+  /* a burst of noise; hp=true differentiates it, which takes the thud out */
+  function noise(o,t0,dur,a,dec,hp){const n0=Math.floor(t0*sr),n=Math.floor(dur*sr),nd=dec*sr;let prev=0;
+    for(let k=0;k<n&&n0+k<o.length;k++){const r=Math.random()*2-1,v=hp?(r-prev)*0.5:r;prev=r;o[n0+k]+=a*v*Math.exp(-k/nd)}}
+  /* rendered with room to ring out, then trimmed where it has fallen silent */
+  function render(dur,peak,fill){let o=new Float32Array(Math.ceil(dur*sr));fill(o);
+    let m=0;for(let i=0;i<o.length;i++){const v=Math.abs(o[i]);if(v>m)m=v}
+    const g=m?peak/m:0;for(let i=0;i<o.length;i++)o[i]*=g;
+    let end=o.length-1;while(end>0&&Math.abs(o[end])<0.0025)end--;
+    o=o.slice(0,Math.min(o.length,end+Math.floor(0.01*sr)));
+    const fo=Math.min(o.length,Math.floor(0.05*sr));for(let i=0;i<fo;i++)o[o.length-1-i]*=i/fo;
+    return o}
+  function chime(o,t0,f,a,len){len=len||1;                          // struck bronze
+    part(o,t0,f,a,0.62*len);part(o,t0,f*1.0019,a*0.45,0.56*len);    // a close pair, so it shimmers
+    part(o,t0,f*2.0,a*0.26,0.42*len);part(o,t0,f*3.01,a*0.12,0.24*len);
+    part(o,t0,f*4.16,a*0.07,0.13*len);part(o,t0,f*5.43,a*0.04,0.07*len);
+    noise(o,t0,0.004,a*0.22,0.0015,true)}                           // the strike
+  function woodblock(o,t0,f,a){                                      // a short dry knock
+    part(o,t0,f,a,0.055,0.0006);part(o,t0,f*1.58,a*0.35,0.03,0.0006);part(o,t0,f*2.9,a*0.12,0.012,0.0006);
+    noise(o,t0,0.005,a*0.3,0.0015,true)}
+  function bowl(o,t0,f,a,len){len=len||1;                            // singing bowl: detuned pairs beat slowly
+    [[1,1,2.4],[2.72,0.42,1.25],[5.18,0.17,0.6],[8.4,0.05,0.28]].forEach(([r,am,d])=>{
+      part(o,t0,f*r-0.7,a*am*0.5,d*len,0.006);part(o,t0,f*r+0.7,a*am*0.5,d*len,0.006)})}
+  function bell(o,t0,f,a){                                           // temple bell: hum, prime, minor-third tierce, quint, nominal
+    [[0.5,0.3,3.4],[1,1,2.7],[1.19,0.42,2.0],[1.5,0.28,1.6],[2,0.38,1.25],[2.51,0.14,0.8],[3,0.09,0.6],[4.07,0.05,0.38]]
+      .forEach(([r,am,d])=>part(o,t0,f*r,a*am,d,0.004));
+    noise(o,t0,0.009,a*0.18,0.003,true)}
+  function paper(o,t0,a){noise(o,t0,0.02,a,0.0045,true);part(o,t0,2500,a*0.22,0.009,0.0005)}
+
+  /* THE GONG, rebuilt from a recording. 48 tones measured from it, each
+     [Hz, level dB, level at the strike relative to its own peak dB, time of
+     its peak s, decay time constant s]: the low tones sound at once, the upper
+     ones start far below their peak and swell in over a second or two — the
+     bloom that makes it a gong. Above them, a shimmer of band-passed noise,
+     [low Hz, high Hz, level dB, start dB, peak s, decay s]. Every level was
+     calibrated against the recording band by band. */
+  const GONG=[[10.8,-24.2,-6.3,1.74,9.0],[53.8,-4.7,-5.3,0.03,3.07],[96.9,-22.2,-0.5,0.01,4.16],[161.5,-5.6,-4.3,0.06,2.84],[204.6,-18.0,-2.7,0.17,3.26],[226.1,-13.6,-11.7,0.16,2.66],[269.2,-1.8,-15.4,0.41,2.3],[301.5,3.7,-27.9,0.55,2.06],[355.3,3.1,-27.1,1.16,1.63],[387.6,-7.5,-16.5,0.88,3.3],[430.7,-7.6,-38.6,0.72,2.92],[463.0,-4.7,-30.4,0.68,1.66],[506.0,-8.9,-34.2,1.61,1.94],[559.9,-8.9,-32.3,1.34,1.74],[581.4,-11.2,-31.8,0.51,2.75],[646.0,-23.3,-34.2,0.98,1.43],[710.6,-16.3,-35.8,1.87,1.65],[775.2,-16.1,-47.6,0.65,1.71],[796.7,-15.5,-45.7,0.5,1.82],[861.3,-19.7,-37.6,0.57,2.19],[915.2,-10.9,-44.5,1.73,1.29],[1012.1,-17.0,-40.4,0.91,1.89],[1065.9,-11.3,-44.3,1.01,1.53],[1098.2,-19.9,-41.3,0.74,1.62],[1141.3,-20.7,-52.3,1.1,1.29],[1173.6,-17.1,-48.4,0.92,1.14],[1205.9,-21.9,-46.0,0.71,1.41],[1248.9,-20.1,-39.9,0.79,1.33],[1270.5,-24.7,-33.3,1.25,1.22],[1324.3,-20.2,-42.1,0.75,1.55],[1367.4,-15.6,-55.8,1.22,1.34],[1399.7,-21.0,-48.9,1.54,1.34],[1442.7,-20.4,-50.8,1.25,1.15],[1518.1,-27.7,-43.2,1.31,1.31],[1550.4,-27.3,-45.1,0.85,1.25],[1593.5,-26.8,-46.1,1.1,1.7],[1625.8,-27.5,-47.0,1.07,1.24],[1668.8,-29.7,-48.2,1.18,1.17],[1701.1,-28.7,-44.7,1.37,1.16],[1733.4,-27.2,-49.3,2.19,0.97],[1765.7,-27.4,-47.8,1.6,0.95],[1798.0,-33.1,-37.9,1.06,1.02],[1830.3,-31.3,-44.8,1.21,0.94],[1905.7,-26.2,-43.7,1.18,1.1],[1938.0,-29.0,-49.4,1.66,1.33],[1959.5,-31.2,-50.7,1.47,0.9],[2045.7,-27.9,-61.0,1.03,0.97],[2099.5,-31.8,-42.7,1.38,0.85]];
+  /* chosen by ear from three versions: 4 Hz-wide tone bands, a small room */
+  const GONG_A={bw:4,room:0.18,rt:1.4};
+  const GONG_WASH=[[1400,2200,-9.4,-46.1,1.3,1.15],[2200,3300,-9.3,-33.4,1.23,0.82]];
+  /* how the tones swell in, measured: the share of the starting shortfall still
+     left at each fraction of the way to the peak */
+  const SWELL=[[0,1],[0.05,0.86],[0.1,0.73],[0.2,0.37],[0.35,0.18],[0.5,0.15],[0.75,0.11],[1,0]];
+  function swell(u){if(u>=1)return 0;for(let j=1;j<SWELL.length;j++)if(u<=SWELL[j][0]){const [u0,v0]=SWELL[j-1],[u1,v1]=SWELL[j];return v0+(v1-v0)*(u-u0)/(u1-u0)}return 0}
+  /* Each tone of the gong is a resonator ringing on noise, not a pure sine: a
+     narrow band of sound whose level and phase wander naturally, as a real
+     gong's partials do. Pure sines beating against each other have a clean,
+     ring-modulated quality — the robot-voice sound — however they are tuned. */
+  let seed=(Math.random()*4294967296)>>>0;
+  const rnd=()=>{seed^=seed<<13;seed>>>=0;seed^=seed>>>17;seed^=seed<<5;seed>>>=0;return seed/2147483648-1};
+  function room(o,mix,rt,dark){                                       // a small room: four delays feeding each other
+    const L=[1116,1356,1557,1813].map(n=>Math.round(n*sr/44100)),buf=L.map(n=>new Float32Array(n)),idx=[0,0,0,0],lp=[0,0,0,0];
+    const g=L.map(n=>Math.pow(10,-3*n/(rt*sr))),d=dark||0.35;
+    for(let i=0;i<o.length;i++){const y=idx.map((j,c)=>buf[c][j]);const s=(y[0]+y[1]+y[2]+y[3])*0.5;
+      for(let c=0;c<4;c++){lp[c]+=(1-d)*((y[c]-s)-lp[c]);buf[c][idx[c]]=o[i]*0.25+g[c]*lp[c];idx[c]=(idx[c]+1)%L[c]}
+      o[i]=(1-mix)*o[i]+mix*(y[0]+y[1]+y[2]+y[3])*0.6}}
+  function gong(o,t0,a,opt){const n0=Math.floor(t0*sr),BW=opt.bw;
+    GONG.forEach(([f,L,L0,tp,td])=>{
+      const np=Math.max(1,Math.floor(tp*sr)),dn=Math.exp(-1/(td*sr)),B=64,w=2*Math.PI*f/sr;
+      const r=Math.exp(-Math.PI*BW/sr),a1=-2*r*Math.cos(w),a2=r*r;
+      // noise in, level set so the band carries the same energy as the measured tone
+      // exact power of this resonator driven by uniform noise (variance 1/3), so each band carries a unit sine's energy
+      const cw2=Math.cos(w)*Math.cos(w),vr=(1/3)*(1+r*r)/((1-r*r)*((1+r*r)*(1+r*r)-4*r*r*cw2)),norm=Math.SQRT1_2/Math.sqrt(vr);
+      const at=k=>a*Math.pow(10,(L+L0*swell(k/np))/20);
+      let g=at(0),m=1,y1=0,y2=0;
+      for(let i=n0,k=0;i<o.length;i++,k++){
+        if(k<np&&k%B===0)m=Math.pow(at(Math.min(np,k+B))/g,1/B);
+        const y=g*norm*rnd()-a1*y1-a2*y2;y2=y1;y1=y;o[i]+=y;
+        g*=k<np?m:dn;if(k>np&&g<1e-5&&Math.abs(y)<1e-5)break}});
+    GONG_WASH.forEach(([lo,hi,L,L0,tp,td])=>{
+      const fc=Math.sqrt(lo*hi),Q=fc/(hi-lo),w0=2*Math.PI*fc/sr,al=Math.sin(w0)/(2*Q),c=Math.cos(w0),a0=1+al;
+      const b0=al/a0,b2=-al/a0,a1=-2*c/a0,a2=(1-al)/a0;let x1=0,x2=0,y1=0,y2=0,y3=0,y4=0,z1=0,z2=0;
+      const np=Math.max(1,Math.floor(tp*sr)),up=Math.pow(10,(-L0/20)/np),dn=Math.exp(-1/(td*sr));
+      let g=a*Math.pow(10,(L+L0)/20);
+      for(let i=n0,k=0;i<o.length;i++,k++){const xn=rnd();
+        const y=b0*xn+b2*x2-a1*y1-a2*y2;x2=x1;x1=xn;y2=y1;y1=y;
+        const v=b0*y+b2*z2-a1*y3-a2*y4;z2=z1;z1=y;y4=y3;y3=v;
+        o[i]+=g*v;g*=k<np?up:dn;if(k>np&&g<1e-6)break}});
+    let lp=0;for(let k=0;k<Math.floor(0.06*sr)&&n0+k<o.length;k++){lp+=0.08*(rnd()-lp);o[n0+k]+=a*0.9*lp*Math.exp(-k/(0.018*sr))}
+    room(o,opt.room,opt.rt);
+    const r0=Math.floor(5.2*sr),r1=o.length;for(let i=r0;i<r1;i++){const q=(i-r0)/(r1-r0);o[i]*=0.5+0.5*Math.cos(Math.PI*q)}}
+
+  /* pentatonic, so any run of steps sounds like a phrase rather than a scale exercise */
+  const LADDER=[659.26,783.99,880.00,1046.50,1174.66,1318.51,1567.98,1760.00];
+  const step=n=>LADDER[Math.max(0,Math.min(n|0,LADDER.length-1))];
+  const MAKE={
+    reveal:()=>render(0.2,0.2,o=>paper(o,0,1)),
+    correct:n=>render(3.2,0.42,o=>chime(o,0,step(n),1)),
+    easy:n=>render(3.4,0.46,o=>{chime(o,0,step(n),1);chime(o,0.05,step(n)*1.5,0.62)}),
+    hard:n=>render(2.6,0.34,o=>chime(o,0,step(n)*2/3,0.9,0.75)),          // the right-answer chime, a fifth lower
+    again:()=>render(0.7,0.36,o=>{woodblock(o,0,600,1);woodblock(o,0.12,450,0.8)}),   // two knocks, falling a fourth
+    combo:n=>render(4,0.48,o=>{const k=Math.max(0,Math.min(n|0,5));
+      [0,1,2].forEach(i=>chime(o,0.06*i,LADDER[k+i],i===2?1:0.7,0.9));part(o,0.14,3135.96,0.12,1.1,0.01)}),
+    level:()=>render(7,0.52,o=>{bowl(o,0,392,1);[659.26,783.99,880,1046.5,1318.51].forEach((f,i)=>chime(o,0.2+i*0.09,f,0.42,0.8))}),
+    goal:()=>render(11,0.58,o=>{bell(o,0,261.63,1);chime(o,0.26,1046.5,0.3,1.4);chime(o,0.4,1318.51,0.26,1.4)}),
+    achieve:()=>render(6,0.5,o=>{bowl(o,0,523.25,0.9,0.7);bowl(o,0.13,698.46,0.9,0.7)}),
+    complete:()=>render(8,0.7,o=>gong(o,0,1,GONG_A))
+  };
+  return{sr,make:(k,n)=>MAKE[k]?MAKE[k](n):new Float32Array(1)}
 }
+const SND=(()=>{
+  let ctx=null,out=null,S=null,W=null,wOk=true,seq=0;const cache=new Map(),wait=new Map(),cb=new Map();
+  const HEAVY={complete:1,goal:1,level:1,achieve:1};   // long sounds: made in the background, never on a tap
+  function ac(){
+    if(!ctx){const C=window.AudioContext||window.webkitAudioContext;if(!C)return null;
+      ctx=new C();const comp=ctx.createDynamicsCompressor();comp.threshold.value=-12;comp.knee.value=12;comp.ratio.value=3;
+      out=ctx.createGain();out.gain.value=0.95;out.connect(comp);comp.connect(ctx.destination)}
+    if(ctx.state==='suspended')ctx.resume();return ctx}
+  const key=(k,n)=>k+':'+(n==null?'':Math.min(n|0,9));
+  function toBuf(d){const b=ctx.createBuffer(1,d.length,ctx.sampleRate);b.getChannelData(0).set(d);return b}
+  function now(k,n){const kk=key(k,n);let b=cache.get(kk);if(!b){if(!S||S.sr!==ctx.sampleRate)S=SYNTH(ctx.sampleRate);b=toBuf(S.make(k,n));cache.set(kk,b)}return b}
+  function fail(){wOk=false;try{W&&W.terminate()}catch(e){}W=null;
+    cb.forEach(({k,n,res})=>(window.requestIdleCallback||setTimeout)(()=>res(now(k,n))));cb.clear()}
+  function worker(){if(W||!wOk)return W;
+    try{const src='const SYNTH='+SYNTH.toString()+';let S=null;onmessage=e=>{const m=e.data;if(!S||S.sr!==m.sr)S=SYNTH(m.sr);const d=S.make(m.k,m.n);postMessage({id:m.id,d},[d.buffer])}';
+      W=new Worker(URL.createObjectURL(new Blob([src],{type:'text/javascript'})));
+      W.onmessage=e=>{const c=cb.get(e.data.id);if(!c)return;cb.delete(e.data.id);c.res(toBuf(e.data.d))};
+      W.onerror=fail}catch(e){wOk=false;W=null}
+    return W}
+  function later(k,n){const kk=key(k,n);if(cache.has(kk))return Promise.resolve(cache.get(kk));if(wait.has(kk))return wait.get(kk);
+    const p=new Promise(res=>{const done=b=>{cache.set(kk,b);wait.delete(kk);res(b)};const w=worker();
+      if(w){const id=++seq;cb.set(id,{k,n,res:done});w.postMessage({id,sr:ctx.sampleRate,k,n})}
+      else (window.requestIdleCallback||setTimeout)(()=>done(now(k,n)))});
+    wait.set(kk,p);return p}
+  function start(b,delay){const s=ctx.createBufferSource();s.buffer=b;s.connect(out);s.start(ctx.currentTime+(delay||0))}
+  function play(k,n,delay){const c=ac();if(!c)return;const kk=key(k,n);
+    if(cache.has(kk))return start(cache.get(kk),delay);
+    if(HEAVY[k]||wait.has(kk))return later(k,n).then(b=>start(b,delay));
+    start(now(k,n),delay)}
+  /* made ahead, in the background, so no tap ever waits */
+  function prime(list){if(!ac())return;list.forEach(([k,n])=>later(k,n))}
+  return{play,ac,prime,_render:(k,n)=>{ac();return now(k,n)},_ready:(k,n)=>{ac();return later(k,n)},_worker:()=>!!W}
+})();
+function ac(){return SND.ac()}
+/* A right answer climbs one pentatonic step for each in the current run, so a
+   streak is heard as a rising phrase; every fifth in a row is marked. Hard is the
+   same chime a fifth lower. n is the run position the sound belongs to. */
+const SND_STEPPED={correct:1,easy:1,hard:1,combo:1};
+function sfx(kind,n){if(!ST.soundOn)return;
+  const k={tick:'reveal',good:'correct'}[kind]||kind;
+  SND.play(k,SND_STEPPED[k]?(n==null?Math.max(0,combo-1):n):undefined)}
+function sfxRun(){if(ST.soundOn&&combo>0&&combo%5===0)SND.play('combo',Math.min(5,Math.floor(combo/5)+1),0.16)}
+let _sndPrimed=false;
+function primeSounds(){if(_sndPrimed||!ST.soundOn)return;_sndPrimed=true;
+  SND.prime([['correct',0],['correct',1],['reveal'],['again'],['correct',2],['hard',0],['easy',0],['correct',3],
+    ['combo',2],['correct',4],['complete'],['level'],['goal'],['achieve']])}
 
 /* ============ FX (canvas particles) ============ */
 const cv=document.getElementById('fx');let cx;function sizeCv(){cv.width=innerWidth;cv.height=innerHeight;cx=cv.getContext('2d')}
@@ -1779,7 +1923,7 @@ function overallMastery(){let m=0,t=0;CHAN.forEach(c=>{const x=channelMastery(c)
 function go(view){scrollTo(0,0);$('#home').classList.toggle('active',view==='home');
   const m=$('#viewMount');m.classList.toggle('active',view!=='home');if(view==='home'){renderHome();m.innerHTML=''}}
 $('#logo').onclick=()=>go('home');$('#brand').onclick=()=>go('home');
-$('#sound').onclick=()=>{ST.soundOn=!ST.soundOn;save();$('#sound').classList.toggle('on',ST.soundOn);if(ST.soundOn){ac();sfx('good')}};
+$('#sound').onclick=()=>{ST.soundOn=!ST.soundOn;save();$('#sound').classList.toggle('on',ST.soundOn);if(ST.soundOn){ac();sfx('good',0);primeSounds()}};
 $('#settings').onclick=()=>openSettings();
 $('#mates').onclick=()=>{ac();openMode('friends')};
 $('#resetLink').onclick=()=>{if(confirm('Erase all study progress on this device?')){ST=fresh();save();renderHome()}};
@@ -2035,10 +2179,13 @@ function locationItems(pts){const out=[];
       if(b.num===a.num+1 && tierOf(b.id)<=3)
       out.push({key:a.id+':next',deck:ch,tagText:'Channel Sequence',promptHTML:`<div class="ask">Which point comes next along the ${esc(ch)} channel?</div><div class="py">${esc(a.pinyin)}</div><div class="code">${a.code}-${a.num}</div><div class="en">${esc(a.english)}</div>${a.location?`<div class="loc" style="margin-top:9px">${esc(a.location)}</div>`:''}`,answerHTML:`<div class="py">${esc(b.pinyin)}</div><div class="code">${b.code}-${b.num}</div><div class="en">${esc(b.english)}</div>${b.location?`<div class="loc" style="margin-top:9px">${esc(b.location)}</div>`:''}`+extraBlock(b)})}});
   return out}
-function buildMatrix(){return DB.categoryNaming.map(c=>{const p=DB.points.find(x=>norm(x.pinyin)===norm(c.pinyin));
+function buildMatrix(){const mode=ST.matrixShow||'name';
+  const ask=mode==='code'?'Give the point’s code':mode==='both'?'Name the point and its code':'Name the point';
+  return DB.categoryNaming.map(c=>{const p=DB.points.find(x=>norm(x.pinyin)===norm(c.pinyin));
+  const big=p&&mode!=='name'?`<div class="code" style="font-size:30px;letter-spacing:1px">${p.code}-${p.num}</div>`:'';
   return{key:'cn:'+c.channel+':'+c.category,deck:'Command Points',tagText:'Category → Point',
-    promptHTML:`<div class="ask">Name the point</div><div class="prompt"><b style="color:var(--gold)">${esc(c.category)}</b><br>of the <b style="color:var(--seal)">${esc(c.channel)}</b> channel</div>`,
-    answerHTML:`<div class="py">${esc(c.pinyin)}${sayBtn(p)}</div>${p?`<div class="hanzi" style="font-size:50px">${esc(p.hanzi)}</div><div class="en">${esc(p.english)}</div><div class="code">${p.code}-${p.num}</div>`+extraBlock(p):''}`}})}
+    promptHTML:`<div class="ask">${ask}</div><div class="prompt"><b style="color:var(--gold)">${esc(c.category)}</b><br>of the <b style="color:var(--seal)">${esc(c.channel)}</b> channel</div>`,
+    answerHTML:(mode==='code'?big:'')+`<div class="py">${esc(c.pinyin)}${sayBtn(p)}</div>${mode==='both'?big:''}${p?`<div class="hanzi" style="font-size:50px">${esc(p.hanzi)}</div><div class="en">${esc(p.english)}</div>${mode==='name'?`<div class="code">${p.code}-${p.num}</div>`:''}`+extraBlock(p):''}`}})}
 function buildClinic(){return DB.categorySelecting.map((c,i)=>{
   const opts=shuffle([{t:c.answer,correct:true},...sample([...new Set(DB.categorySelecting.map(x=>x.answer))].filter(a=>a!==c.answer),3).map(t=>({t,correct:false}))]);
   const canon=SEL_CANON[c.answer];
@@ -2630,7 +2777,7 @@ function renderCases(mount){
   const cont=$('#ctype');types.forEach(t=>{const x=el('div','chip'+(t[0]===sel?' on':''),`${t[2]} ${t[1]}`);x.onclick=()=>{sel=t[0];[...cont.children].forEach(n=>n.classList.remove('on'));x.classList.add('on')};cont.appendChild(x)});
   $('#cbegin').onclick=()=>runSession(sel);
 
-  function runSession(rtype){combo=0;const cases=liveItems(buildCases()).filter(c=>!rtype||c.rtype===rtype);
+  function runSession(rtype){combo=0;primeSounds();const cases=liveItems(buildCases()).filter(c=>!rtype||c.rtype===rtype);
     let due=cases.filter(c=>{const s=ST.srs[c.key];return s&&s.due<=now()});
     const ok=introGate();let neu=cases.filter(c=>!ST.srs[c.key]);const n0=neu.length;neu=neu.filter(ok);const held=n0-neu.length;
     let queue=shuffle(due).concat(shuffle(neu).slice(0,ST.newCap||12));
@@ -2653,7 +2800,7 @@ function renderCases(mount){
               if(c.correct)x.classList.add('correct');
               if(x._sel&&!c.correct){x.classList.add('wrong');bad=true}
               if(c.correct&&!x._sel){x.classList.add('missed');bad=true}});
-            if(bad)wrong++;sfx(bad?'again':'good');
+            if(bad)wrong++;sfx(bad?'again':'good',combo);judged=true;
             if(s.explain)$('#cexp').innerHTML=`<div class="explain">${s.explain}</div>`;
             $('#cctrl').innerHTML=`<div class="actions"><button class="flipbtn" id="cnext">${step<C.steps.length-1?'Next →':'See it →'}</button></div>`;
             $('#cnext').onclick=()=>{step++;if(step<C.steps.length)renderStep();else finishCase()}};
@@ -2662,7 +2809,7 @@ function renderCases(mount){
             b.onclick=()=>{Array.from(box.children).forEach(x=>x.disabled=true);
               s.choices.forEach((cc,j)=>{if(cc.correct)box.children[j].classList.add('correct')});
               if(!c.correct){b.classList.add('wrong');wrong++}
-              sfx(c.correct?'good':'again');
+              sfx(c.correct?'good':'again',combo);judged=true;
               if(s.explain)$('#cexp').innerHTML=`<div class="explain">${s.explain}</div>`;
               $('#cctrl').innerHTML=`<div class="actions"><button class="flipbtn" id="cnext">${step<C.steps.length-1?'Next step →':'See it →'}</button></div>`;
               $('#cnext').onclick=()=>{step++;if(step<C.steps.length)renderStep();else finishCase()}};
@@ -2675,11 +2822,11 @@ function renderCases(mount){
            <div style="text-align:center;color:var(--paper-faint);font-size:13px;margin:14px 0 8px;font-family:var(--disp);letter-spacing:1px">${wrong===0?'Reasoned cleanly — how well do you know it?':'Worth another pass — grade honestly.'}</div>
            <div class="grades" id="cgr"></div>`;
         $('#cgr').innerHTML=`<button class="grade again" data-g="0">Again<small>&lt;1m</small></button><button class="grade hard" data-g="1">Hard</button><button class="grade good" data-g="2">Good</button><button class="grade easy" data-g="3">Easy</button>`;
-        $('#cgr').querySelectorAll('.grade').forEach(b=>b.onclick=()=>{const g=+b.dataset.g;if(g>=2)combo++;else combo=0;review(C.key,g);save();syncHeader();nextCase()})}
+        $('#cgr').querySelectorAll('.grade').forEach(b=>b.onclick=()=>{const g=+b.dataset.g;if(g>=2)combo++;else combo=0;if(g>=2)sfxRun();review(C.key,g);save();syncHeader();nextCase()})}
       renderStep()}
     function nextCase(){idx++;if(idx>=queue.length){summary();return}runCase()}
     function summary(){checkAch();save();syncHeader();
-      mount.innerHTML=vhead('Point Reasoning','推理')+`<div class="done"><div class="han">畢</div><h2>Session complete</h2>
+      sfx('complete');mount.innerHTML=vhead('Point Reasoning','推理')+`<div class="done"><div class="han">畢</div><h2>Session complete</h2>
         <div class="stats"><div class="stat"><b>${total}</b><span>done</span></div><div class="stat"><b>${solved}</b><span>clean</span></div><div class="stat"><b>${caseDue(rtype)}</b><span>still due</span></div></div>
         <div class="actions" style="margin-top:18px"><button class="btn ghost" id="cagain">Choose type</button><button class="btn primary" onclick="go('home')">Home</button></div></div>`;
       $('#cagain').onclick=()=>renderCases(mount)}
@@ -3439,6 +3586,8 @@ function startQuiz(mount,items,opt,kind){items=liveItems(items||[]);
     mount.innerHTML=vhead(opt.title,opt.cn)+`<div class="done"><div class="han">畢</div><h2>${held?'Not yet':sm==='learn'?'All introduced':'All caught up'}</h2><p>${msg}</p><div class="actions" style="margin-top:16px">${(sm==='revise'||held)?'<button class="btn ghost" id="toLearn">Learn new</button>':''}<button class="btn primary" onclick="go('home')">Home</button></div></div>`;
     const tl=$('#toLearn');if(tl)tl.onclick=()=>openMode('learn');return}
   let total=queue.length;let idx=0,flipped=false,correctCount=0,xpEarned=0,maxCombo=0,answered=0;
+  // an answer already judged by picking a choice has had its sound; grading it adds only the run marker
+  let judged=false;primeSounds();
   /* Daily Goal counts toward the goal, not through a queue: the queue grows as
      failed cards come back and new ones fall due, and a count that follows the
      queue jumps (30 / 30 becoming 31 / 52). Reaching the goal stops and asks.
@@ -3481,7 +3630,7 @@ function startQuiz(mount,items,opt,kind){items=liveItems(items||[]);
     <div class="qctrl" id="qctrl"></div>`;
   const card=$('#qcard'),ctrl=$('#qctrl');
   function setCombo(){const c=$('#qcombo');if(combo>=2){c.textContent='Combo ×'+combo;c.classList.add('show');c.classList.toggle('hot',combo>=5)}else c.classList.remove('show','hot');if(combo>maxCombo)maxCombo=combo}
-  function render(){const it=queue[idx];flipped=false;shownCount[it.key]=(shownCount[it.key]||0)+1;
+  function render(){judged=false;const it=queue[idx];flipped=false;shownCount[it.key]=(shownCount[it.key]||0)+1;
     $('#qdeck').textContent=(isLeech(it.key)?'頑 ':'')+(it.deck||opt.deck||'');progress();setCombo();
     card.className='card';void card.offsetWidth;card.classList.add('card');
     const ep=itemPoint(it),eb=$('#qedit');
@@ -3520,7 +3669,7 @@ function startQuiz(mount,items,opt,kind){items=liveItems(items||[]);
       shown.forEach((c,n)=>{const b=el('button','choice',`<b>${'ABCDEF'[n]}</b>${c.html}`);
         b.onclick=()=>{Array.from(box.children).forEach(x=>x.disabled=true);
           Array.from(box.children).forEach((x,j)=>{if(shown[j].correct)x.classList.add('correct')});
-          if(!c.correct)b.classList.add('wrong');sfx(c.correct?'good':'again');
+          if(!c.correct)b.classList.add('wrong');sfx(c.correct?'good':'again',combo);judged=true;
           const ans=el('div','');ans.style.marginTop='14px';ans.innerHTML=it.answerHTML||'';card.appendChild(ans);
           if(it.onReveal)try{it.onReveal(card)}catch(e){}
           showGrades(it,c.correct)};
@@ -3560,7 +3709,7 @@ function startQuiz(mount,items,opt,kind){items=liveItems(items||[]);
             if(c.correct)x.classList.add(picks.has(j)?'correct':'missed');
             else if(picks.has(j)){x.classList.add('wrong');bad=true}
             if(c.correct&&!picks.has(j))bad=true});
-          if(bad)wrong++;sfx(bad?'again':'good');
+          if(bad)wrong++;sfx(bad?'again':'good',combo);judged=true;
           const h=ctrl.querySelector('.hint');if(h)h.remove();
           advance()};
         return}
@@ -3568,7 +3717,7 @@ function startQuiz(mount,items,opt,kind){items=liveItems(items||[]);
         b.onclick=()=>{Array.from(box.children).forEach(x=>x.disabled=true);
           s.choices.forEach((cc,j)=>{if(cc.correct)box.children[j].classList.add('correct')});
           if(!c.correct){b.classList.add('wrong');wrong++}
-          sfx(c.correct?'good':'again');
+          sfx(c.correct?'good':'again',combo);judged=true;
           advance()};
         box.appendChild(b)});
       card.appendChild(box);ctrl.innerHTML='';}
@@ -3595,7 +3744,8 @@ function startQuiz(mount,items,opt,kind){items=liveItems(items||[]);
           const at=Math.min(queue.length,idx+3+Math.floor(Math.random()*3));
           queue.splice(at,0,it);total=queue.length;
         }
-        sfx(gr===0?'again':gr===1?'hard':gr===3?'easy':'good');
+        if(!judged)sfx(gr===0?'again':gr===1?'hard':gr===3?'easy':'good');
+        if(gr>=2)sfxRun();
         if(gr>=2){const cr=$('#crit');if(lastCrit&&cr){cr.classList.add('show')}
           const f=$('#xpf');if(f){f.textContent='+'+xp+(lastCrit?' ★':'');f.classList.remove('go');void f.offsetWidth;f.classList.add('go')}}
         if(combo>0&&combo%5===0)burst('gold',innerWidth/2,innerHeight*0.55);
@@ -3617,7 +3767,7 @@ function startQuiz(mount,items,opt,kind){items=liveItems(items||[]);
       if(more.length){queue=queue.concat(more);total=queue.length;render();return}
     }
     stopClock();checkAch();save();syncHeader();$('#qbar').style.width='100%';
-    const acc=answered?Math.round(correctCount/answered*100):0;
+    const acc=answered?Math.round(correctCount/answered*100):0;sfx('complete');
     mount.innerHTML=vhead(opt.title,opt.cn)+`<div class="done"><div class="han">畢</div><h2>Session complete</h2>
       ${goalMode?`<p style="color:var(--gold)">Daily goal ${Math.min(ST.todayCount,goalN)} / ${goalN}</p>`:''}
       <div class="stats"><div class="stat"><b>${answered}</b><span>cards</span></div><div class="stat"><b>+${xpEarned}</b><span>XP</span></div><div class="stat"><b>×${maxCombo}</b><span>best combo</span></div><div class="stat"><b>${acc}%</b><span>recalled</span></div></div>
@@ -3650,17 +3800,25 @@ function setupFlash(mount,preChan){
 function renderMatrix(mount){
   const cats=[...new Set(DB.categoryNaming.map(c=>c.category))];const chans=[...new Set(DB.categoryNaming.map(c=>c.channel))];
   const cell={};DB.categoryNaming.forEach(c=>cell[c.channel+'|'+c.category]=c);
+  const SHOW=[['name','Name'],['code','Code'],['both','Both']];
   mount.innerHTML=vhead('Command Matrix','五輸')+`
     <div class="setup"><div style="color:var(--paper-faint);font-size:14px">Tap any cell to reveal the point, or <b style="color:var(--gold)">quiz the whole grid</b> as spaced cards.</div>
+    <div class="chips" id="mshow" style="margin-top:12px" role="group" aria-label="Show each point by">${SHOW.map(([v,l])=>`<div class="chip${(ST.matrixShow||'name')===v?' on':''}" data-v="${v}">${l}</div>`).join('')}</div>
     <div class="actions" style="justify-content:flex-start;margin-top:12px"><button class="btn primary" id="quizGrid">Quiz the grid →</button><button class="btn ghost" id="revealAll">Reveal all</button><button class="btn ghost" id="hideAll">Hide</button></div></div>
     <div class="matrix-wrap"><table class="matrix"><thead><tr><th class="ch"></th>${cats.map(c=>`<th>${esc(c)}</th>`).join('')}</tr></thead>
     <tbody>${chans.map(ch=>`<tr><th class="ch">${esc(ch)}</th>${cats.map(cat=>{const c=cell[ch+'|'+cat];
       return c?`<td class="has" data-py="${esc(c.pinyin)}">·</td>`:'<td>—</td>'}).join('')}</tr>`).join('')}</tbody></table></div>`;
   const tds=mount.querySelectorAll('td.has');
-  const reveal=td=>{const p=DB.points.find(x=>norm(x.pinyin)===norm(td.dataset.py));td.classList.add('rev');td.innerHTML=`${p?esc(p.hanzi):''}<span class="py">${esc(td.dataset.py)}</span>`};
+  /* Name, code (LU-11) or both — whichever you are learning the grid by. */
+  const reveal=td=>{const p=DB.points.find(x=>norm(x.pinyin)===norm(td.dataset.py));const mode=ST.matrixShow||'name';
+    const cd=p?`<span class="cd">${p.code}-${p.num}</span>`:'';td.classList.add('rev');td.classList.toggle('only',mode==='code'&&!!p);
+    td.innerHTML=mode==='code'&&p?cd:`${p?esc(p.hanzi):''}<span class="py">${esc(td.dataset.py)}</span>${mode==='both'?cd:''}`};
   const hide=td=>{td.classList.remove('rev');td.innerHTML='·'};
   tds.forEach(td=>td.onclick=()=>td.classList.contains('rev')?hide(td):reveal(td));
   $('#revealAll').onclick=()=>tds.forEach(reveal);$('#hideAll').onclick=()=>tds.forEach(hide);
+  mount.querySelectorAll('#mshow .chip').forEach(x=>x.onclick=()=>{ST.matrixShow=x.dataset.v;save();invalidatePool();
+    mount.querySelectorAll('#mshow .chip').forEach(y=>y.classList.toggle('on',y===x));
+    tds.forEach(td=>{if(td.classList.contains('rev'))reveal(td)})});
   $('#quizGrid').onclick=()=>startQuiz(mount,buildMatrix(),{title:'Command Matrix',cn:'五輸',deck:'Command Points',newcap:14})}
 
 /* ============ CHARACTERS MODE ============ */

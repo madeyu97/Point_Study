@@ -745,3 +745,54 @@ DAILY GOAL, DIAGRAMS, WORDING (v55)
      smallest text 11.6px (a step number inside its circle), most 15–20px.
   3. "Which command category?" → "Which category?"
   Service worker cache bumped to jingxue-v84.
+
+SOUND + COMMAND MATRIX CODES (v56)
+  1. NEW SOUND SET, generated in code (offline, nothing added to the download).
+     Right answer: a struck bronze chime that climbs one pentatonic step for each
+     right answer in a row, so a run is heard as a rising phrase; every fifth in
+     a row is marked by three quick chimes. Easy: two chimes, the second a fifth
+     up. Hard: the right-answer chime a fifth lower. Missed: two wood-block
+     knocks, falling. Turning a card: a paper tap. Level up: a singing bowl.
+     Daily goal: a temple bell. Achievement: two bowls. Session complete: a gong.
+     A multiple-choice answer sounds once, when picked; grading it adds only the
+     five-in-a-row marker. Sounds render ahead while idle, so no tap waits.
+     Preview page: https://claude.ai/artifact/J1KV97wcqfcX1QubdRGboG
+  2. COMMAND MATRIX: show each point by Name, Code (LU-11) or Both. The grid,
+     the quiz question and its answer all follow the choice; it is remembered.
+  Service worker cache bumped to jingxue-v85.
+
+GONG REBUILT FROM MATT'S RECORDING (v57)
+  Session complete now uses a gong modelled on a recording Matt chose. 48 tones
+  were measured from it — pitch, level, how far below its peak each starts, when
+  it peaks, how fast it dies — plus the shimmer band above them, and the gong is
+  rebuilt from those numbers, tone by tone. Checked against the recording: the
+  swell (loudest ~1.1s vs 1.2s), the decay (within 1–3 dB over 7s), the balance
+  across every band 40 Hz–2.2 kHz (within 1 dB) and the brightness over time
+  (within ~5% for most of its length). No audio from the recording is in the
+  app; it was only the reference for the measurements.
+  Long sounds (gong, bell, bowl) are now made in a background worker, so the
+  screen never waits: on a CPU slowed 4× the longest freeze while making all
+  four was 23 ms (was ~600 ms). Falls back to idle-time generation if a device
+  refuses workers.
+  Service worker cache bumped to jingxue-v86.
+
+GONG: NO MORE MECHANICAL VIBRATO (v58)
+  The rebuilt gong's tones were perfectly steady, so close pairs beat against
+  each other in a pattern that repeated exactly — heard as a mechanical
+  vibrato. Measured: its pulsing repeated itself 0.80 (1 = like a motor) against
+  the recording's 0.28/0.13. Each tone now drifts slightly on its own slow random
+  course (about 3 Hz, never more than a sixth of a semitone), as a real gong's
+  do. Averaged over six renders it now repeats 0.14/0.13 — no more than the
+  recording — with less slow wobble (0.07 vs 0.17) and the same fast buzz.
+  Tone, swell, decay and brightness unchanged from v57.
+  Service worker cache bumped to jingxue-v87.
+
+GONG A (v59)
+  The pure-tone gong still sounded robotic: pure sines beating against each
+  other have a clean, ring-modulated quality however they are tuned. Each of the
+  48 measured tones is now a resonator ringing on noise — a narrow (4 Hz) band
+  whose level and phase wander naturally, as a real gong's partials do — in a
+  small room (four-delay reverb, 1.4 s, 18% wet). Band balance still matches the
+  recording within a few dB. Chosen by ear over two alternatives (rounder;
+  cleanest). The v58 pitch drift is removed.
+  Service worker cache bumped to jingxue-v88.
