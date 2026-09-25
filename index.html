@@ -1737,10 +1737,25 @@ function SYNTH(sr){
   /* a burst of noise; hp=true differentiates it, which takes the thud out */
   function noise(o,t0,dur,a,dec,hp){const n0=Math.floor(t0*sr),n=Math.floor(dur*sr),nd=dec*sr;let prev=0;
     for(let k=0;k<n&&n0+k<o.length;k++){const r=Math.random()*2-1,v=hp?(r-prev)*0.5:r;prev=r;o[n0+k]+=a*v*Math.exp(-k/nd)}}
-  /* rendered with room to ring out, then trimmed where it has fallen silent */
-  function render(dur,peak,fill){let o=new Float32Array(Math.ceil(dur*sr));fill(o);
-    let m=0;for(let i=0;i<o.length;i++){const v=Math.abs(o[i]);if(v>m)m=v}
-    const g=m?peak/m:0;for(let i=0;i<o.length;i++)o[i]*=g;
+  /* How loud a sound SOUNDS, in dB: weighted like a phone speaker (little below
+     300 Hz) and the ear (more sensitive above ~2 kHz), over its loudest 100 ms.
+     Levelling by the highest spike instead let a long chime sound far louder
+     than a short knock at the same setting. */
+  function loudness(o){
+    const w0=2*Math.PI*300/sr,c=Math.cos(w0),al=Math.sin(w0)/(2*Math.SQRT1_2),a0=1+al;         // high-pass, 300 Hz
+    const b0=(1+c)/2/a0,b1=-(1+c)/a0,b2=(1+c)/2/a0,a1=-2*c/a0,a2=(1-al)/a0;
+    const k=Math.tan(Math.PI*1500/sr),h0=1/(1+k),h1=(k-1)/(k+1);                              // + a treble shelf
+    let x1=0,x2=0,y1=0,y2=0,u1=0,v1=0,sum=0,best=0;const W=Math.floor(0.1*sr),e=new Float32Array(o.length);
+    for(let i=0;i<o.length;i++){const x=o[i],y=b0*x+b1*x1+b2*x2-a1*y1-a2*y2;x2=x1;x1=x;y2=y1;y1=y;
+      const v=h0*(y-u1)-h1*v1;u1=y;v1=v;const z=y+0.58*v;e[i]=z*z;sum+=e[i];if(i>=W)sum-=e[i-W];if(sum>best)best=sum}
+    return 10*Math.log10(best/W+1e-12)}
+  const REF=-14,MAXPEAK=0.85;                // the level every sound is brought to; no single sound peaks above this
+  /* rendered with room to ring out, levelled by loudness (rel = dB above or
+     below the common level), then trimmed where it has fallen silent */
+  function render(dur,rel,fill){let o=new Float32Array(Math.ceil(dur*sr));fill(o);
+    let g=Math.pow(10,(REF+rel-loudness(o))/20),m=0;for(let i=0;i<o.length;i++){const v=Math.abs(o[i]);if(v>m)m=v}
+    if(m*g>MAXPEAK)g=MAXPEAK/m;
+    for(let i=0;i<o.length;i++)o[i]*=g;
     let end=o.length-1;while(end>0&&Math.abs(o[end])<0.0025)end--;
     o=o.slice(0,Math.min(o.length,end+Math.floor(0.01*sr)));
     const fo=Math.min(o.length,Math.floor(0.05*sr));for(let i=0;i<fo;i++)o[o.length-1-i]*=i/fo;
@@ -1760,7 +1775,7 @@ function SYNTH(sr){
     [[0.5,0.3,3.4],[1,1,2.7],[1.19,0.42,2.0],[1.5,0.28,1.6],[2,0.38,1.25],[2.51,0.14,0.8],[3,0.09,0.6],[4.07,0.05,0.38]]
       .forEach(([r,am,d])=>part(o,t0,f*r,a*am,d,0.004));
     noise(o,t0,0.009,a*0.18,0.003,true)}
-  function paper(o,t0,a){noise(o,t0,0.02,a,0.0045,true);part(o,t0,2500,a*0.22,0.009,0.0005)}
+  function tick(o,t0,a){part(o,t0,1650,a,0.028,0.0006);part(o,t0,2780,a*0.3,0.014,0.0006);noise(o,t0,0.012,a*0.35,0.004,true)}   // a small bamboo tick
 
   /* THE GONG, rebuilt from a recording. 48 tones measured from it, each
      [Hz, level dB, level at the strike relative to its own peak dB, time of
@@ -1819,27 +1834,36 @@ function SYNTH(sr){
   const LADDER=[659.26,783.99,880.00,1046.50,1174.66,1318.51,1567.98,1760.00];
   const step=n=>LADDER[Math.max(0,Math.min(n|0,LADDER.length-1))];
   const MAKE={
-    reveal:()=>render(0.2,0.2,o=>paper(o,0,1)),
-    correct:n=>render(3.2,0.42,o=>chime(o,0,step(n),1)),
-    easy:n=>render(3.4,0.46,o=>{chime(o,0,step(n),1);chime(o,0.05,step(n)*1.5,0.62)}),
-    hard:n=>render(2.6,0.34,o=>chime(o,0,step(n)*2/3,0.9,0.75)),          // the right-answer chime, a fifth lower
-    again:()=>render(0.7,0.36,o=>{woodblock(o,0,600,1);woodblock(o,0.12,450,0.8)}),   // two knocks, falling a fourth
-    combo:n=>render(4,0.48,o=>{const k=Math.max(0,Math.min(n|0,5));
+    // levels are in dB against the common level: the card tick sits a little under, as it plays on every card
+    reveal:()=>render(0.25,-5,o=>tick(o,0,1)),
+    correct:n=>render(3.2,0,o=>chime(o,0,step(n),1)),
+    easy:n=>render(3.4,0,o=>{chime(o,0,step(n),1);chime(o,0.05,step(n)*1.5,0.62)}),
+    hard:n=>render(2.6,0,o=>chime(o,0,step(n)*2/3,0.9,0.75)),          // the right-answer chime, a fifth lower
+    again:()=>render(0.7,0,o=>{woodblock(o,0,600,1);woodblock(o,0.12,450,0.8)}),   // two knocks, falling a fourth
+    combo:n=>render(4,0,o=>{const k=Math.max(0,Math.min(n|0,5));
       [0,1,2].forEach(i=>chime(o,0.06*i,LADDER[k+i],i===2?1:0.7,0.9));part(o,0.14,3135.96,0.12,1.1,0.01)}),
-    level:()=>render(7,0.52,o=>{bowl(o,0,392,1);[659.26,783.99,880,1046.5,1318.51].forEach((f,i)=>chime(o,0.2+i*0.09,f,0.42,0.8))}),
-    goal:()=>render(11,0.58,o=>{bell(o,0,261.63,1);chime(o,0.26,1046.5,0.3,1.4);chime(o,0.4,1318.51,0.26,1.4)}),
-    achieve:()=>render(6,0.5,o=>{bowl(o,0,523.25,0.9,0.7);bowl(o,0.13,698.46,0.9,0.7)}),
-    complete:()=>render(8,0.7,o=>gong(o,0,1,GONG_A))
+    level:()=>render(7,0,o=>{bowl(o,0,392,1);[659.26,783.99,880,1046.5,1318.51].forEach((f,i)=>chime(o,0.2+i*0.09,f,0.42,0.8))}),
+    goal:()=>render(11,0,o=>{bell(o,0,261.63,1);chime(o,0.26,1046.5,0.3,1.4);chime(o,0.4,1318.51,0.26,1.4)}),
+    achieve:()=>render(6,0,o=>{bowl(o,0,523.25,0.9,0.7);bowl(o,0.13,698.46,0.9,0.7)}),
+    complete:()=>render(8,0,o=>gong(o,0,1,GONG_A))
   };
   return{sr,make:(k,n)=>MAKE[k]?MAKE[k](n):new Float32Array(1)}
 }
+/* The output: a fixed safety curve, exactly transparent below 80% of full scale,
+   rounding off softly above it — so sounds that overlap can't clip. (The
+   browser's compressor was tried and dropped: it changed each sound's level
+   even far below its threshold, cutting the short ones most.) */
+function outputStage(c){const n=4096,curve=new Float32Array(n);
+  for(let i=0;i<n;i++){const x=(i/(n-1)*2-1)*2,a=Math.abs(x);        // the curve spans -2..2 (input halved below)
+    curve[i]=Math.sign(x)*(a<=0.8?a:0.8+0.2*Math.tanh((a-0.8)/0.2))}
+  const pre=c.createGain();pre.gain.value=0.5;const sh=c.createWaveShaper();sh.curve=curve;sh.oversample='2x';
+  pre.connect(sh);sh.connect(c.destination);return pre}
 const SND=(()=>{
   let ctx=null,out=null,S=null,W=null,wOk=true,seq=0;const cache=new Map(),wait=new Map(),cb=new Map();
   const HEAVY={complete:1,goal:1,level:1,achieve:1};   // long sounds: made in the background, never on a tap
   function ac(){
     if(!ctx){const C=window.AudioContext||window.webkitAudioContext;if(!C)return null;
-      ctx=new C();const comp=ctx.createDynamicsCompressor();comp.threshold.value=-12;comp.knee.value=12;comp.ratio.value=3;
-      out=ctx.createGain();out.gain.value=0.95;out.connect(comp);comp.connect(ctx.destination)}
+      ctx=new C();out=outputStage(ctx)}
     if(ctx.state==='suspended')ctx.resume();return ctx}
   const key=(k,n)=>k+':'+(n==null?'':Math.min(n|0,9));
   function toBuf(d){const b=ctx.createBuffer(1,d.length,ctx.sampleRate);b.getChannelData(0).set(d);return b}

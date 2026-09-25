@@ -796,3 +796,19 @@ GONG A (v59)
   recording within a few dB. Chosen by ear over two alternatives (rounder;
   cleanest). The v58 pitch drift is removed.
   Service worker cache bumped to jingxue-v88.
+
+SOUND LEVELS EVENED OUT (v60)
+  Sounds were levelled by their highest spike, so a ringing chime sounded far
+  louder than a short knock at the same setting; and the browser's compressor
+  on the output cut short sounds further, even far below its threshold. As heard
+  through it, the card-turn click sat 30 dB under the chimes and the wood block
+  7 dB under.
+  Every sound is now levelled by how loud it sounds on a phone (weighted like a
+  phone speaker and the ear, over its loudest 100 ms). The compressor is
+  replaced by a fixed safety curve, transparent below 80% of full scale, that
+  only rounds off overlapping sounds. The card-turn is now a small bamboo tick
+  with some body (a 20 ms click can't be heard without near-distorting), set
+  5 dB under the rest because it plays on every card. Measured as heard: every
+  other sound within 0.1 dB of the others. Busiest case (30 overlapping sounds
+  in a fast session): the safety curve touches 0.001% of the audio; no clipping.
+  Service worker cache bumped to jingxue-v89.
